@@ -1,78 +1,245 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tunisian Mining Hub</title>
-  <link rel="stylesheet" href="assets/css/style.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+e2w5v1W0UNBx0bQIVzQxj0g3g1kRjvMZf2C6w5mM=" crossorigin="" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tunisian Mining Hub | Interactive Mining Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="./assets/css/style.css" />
 </head>
 <body>
   <header class="site-header">
-    <h1>Tunisian Mining Hub</h1>
-    <nav>
-      <a href="#map-section">Map</a>
-      <a href="#about">About</a>
-      <a href="#data">Data</a>
-    </nav>
+    <div class="header-container">
+      <div class="logo-section">
+        <i class="fas fa-mountain"></i>
+        <h1>Tunisian Mining Hub</h1>
+      </div>
+      <nav class="navbar">
+        <a href="#home" class="nav-link active">Home</a>
+        <a href="#map-section" class="nav-link">Map</a>
+        <a href="#stats" class="nav-link">Statistics</a>
+        <a href="#about" class="nav-link">About</a>
+        <a href="#contact" class="nav-link">Contact</a>
+      </nav>
+      <button class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
   </header>
 
-  <main class="container">
-    <section id="hero" class="hero">
-      <h2>Explore mining titles across Tunisia</h2>
-      <p>Interactive map of exploration, active and producing mining titles. Upload your GeoJSON or use the sample dataset included.</p>
+  <main>
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+      <div class="hero-content">
+        <h2>Explore Tunisia's Mining Landscape</h2>
+        <p>Interactive map of exploration, active, and producing mining titles across Tunisia</p>
+        <button class="cta-btn" onclick="document.getElementById('map-section').scrollIntoView({behavior:'smooth'})">
+          Explore Map <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+      <div class="hero-background"></div>
     </section>
 
+    <!-- Stats Section -->
+    <section id="stats" class="stats-section">
+      <div class="container">
+        <h2>Mining Sector Overview</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <i class="fas fa-mine"></i>
+            <h3 id="stat-titles">0</h3>
+            <p>Mining Titles</p>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-gem"></i>
+            <h3 id="stat-commodities">0</h3>
+            <p>Commodity Types</p>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-chart-pie"></i>
+            <h3 id="stat-producing">0</h3>
+            <p>Producing Mines</p>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-microscope"></i>
+            <h3 id="stat-exploration">0</h3>
+            <p>Exploration Projects</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Map Section -->
     <section id="map-section" class="map-section">
-      <aside class="sidebar">
-        <div class="controls">
-          <label for="search">Search title name</label>
-          <input id="search" placeholder="Type a title name and press Enter" />
+      <div class="container">
+        <h2>Interactive Mining Map</h2>
+        <div class="map-container">
+          <aside class="sidebar">
+            <div class="sidebar-header">
+              <h3><i class="fas fa-sliders-h"></i> Controls</h3>
+            </div>
+            
+            <div class="controls-group">
+              <label for="search"><i class="fas fa-search"></i> Search Title</label>
+              <input id="search" type="text" placeholder="Enter title name..." />
+              <small>Press Enter to search</small>
+            </div>
 
-          <label for="filter-status">Filter by status</label>
-          <select id="filter-status">
-            <option value="all">All</option>
-            <option value="Exploration">Exploration</option>
-            <option value="Active">Active</option>
-            <option value="Producing">Producing</option>
-          </select>
+            <div class="controls-group">
+              <label for="filter-status"><i class="fas fa-filter"></i> Filter by Status</label>
+              <select id="filter-status">
+                <option value="all">All Statuses</option>
+                <option value="Exploration">Exploration</option>
+                <option value="Active">Active</option>
+                <option value="Producing">Producing</option>
+              </select>
+            </div>
 
-          <label for="upload-geojson">Upload GeoJSON</label>
-          <input id="upload-geojson" type="file" accept=".geojson,.json" />
+            <div class="controls-group">
+              <label for="filter-commodity"><i class="fas fa-cube"></i> Filter by Commodity</label>
+              <select id="filter-commodity">
+                <option value="all">All Commodities</option>
+                <option value="Copper">Copper</option>
+                <option value="Phosphate">Phosphate</option>
+                <option value="Iron">Iron</option>
+              </select>
+            </div>
 
-          <button id="reset-view">Reset view</button>
+            <div class="controls-group">
+              <label for="upload-geojson"><i class="fas fa-upload"></i> Upload GeoJSON</label>
+              <input id="upload-geojson" type="file" accept=".geojson,.json" />
+              <small>Upload your custom mining data</small>
+            </div>
+
+            <button id="reset-view" class="btn-primary">
+              <i class="fas fa-redo"></i> Reset View
+            </button>
+
+            <div class="legend">
+              <h3><i class="fas fa-circle-info"></i> Legend</h3>
+              <div class="legend-item">
+                <span class="dot copper"></span>
+                <span>Copper</span>
+              </div>
+              <div class="legend-item">
+                <span class="dot phosphate"></span>
+                <span>Phosphate</span>
+              </div>
+              <div class="legend-item">
+                <span class="dot iron"></span>
+                <span>Iron</span>
+              </div>
+              <div class="legend-item">
+                <span class="dot other"></span>
+                <span>Other</span>
+              </div>
+              <div class="legend-item">
+                <span class="status-exploration"></span>
+                <span>Exploration</span>
+              </div>
+              <div class="legend-item">
+                <span class="status-active"></span>
+                <span>Active</span>
+              </div>
+              <div class="legend-item">
+                <span class="status-producing"></span>
+                <span>Producing</span>
+              </div>
+            </div>
+          </aside>
+
+          <div id="map" class="map"></div>
         </div>
-
-        <div class="legend">
-          <h3>Legend</h3>
-          <ul>
-            <li><span class="dot copper"></span> Copper</li>
-            <li><span class="dot phosphate"></span> Phosphate</li>
-            <li><span class="dot iron"></span> Iron</li>
-            <li><span class="dot other"></span> Other</li>
-          </ul>
-        </div>
-      </aside>
-
-      <div id="map" class="map"></div>
+      </div>
     </section>
 
-    <section id="about" class="info">
-      <h2>About</h2>
-      <p>This site provides an interactive map and dataset for mining titles in Tunisia. It is a static site powered by Leaflet and GeoJSON; it is easy to extend to fetch live data from a backend or a GIS service.</p>
+    <!-- About Section -->
+    <section id="about" class="about-section">
+      <div class="container">
+        <h2>About This Platform</h2>
+        <div class="about-grid">
+          <div class="about-card">
+            <i class="fas fa-globe"></i>
+            <h3>Interactive Mapping</h3>
+            <p>Explore mining titles across Tunisia with our powerful Leaflet-based interactive map. View details, search, and filter by status or commodity type.</p>
+          </div>
+          <div class="about-card">
+            <i class="fas fa-database"></i>
+            <h3>Data Management</h3>
+            <p>Upload your own GeoJSON datasets to visualize mining data. Easy integration with your existing spatial databases and workflows.</p>
+          </div>
+          <div class="about-card">
+            <i class="fas fa-chart-bar"></i>
+            <h3>Analytics</h3>
+            <p>View real-time statistics and insights about mining titles, commodities, and project status across the region.</p>
+          </div>
+          <div class="about-card">
+            <i class="fas fa-lock"></i>
+            <h3>Secure Access</h3>
+            <p>All data is processed locally in your browser. No server uploads or data sharing without your explicit consent.</p>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <section id="data" class="info">
-      <h2>Included sample data</h2>
-      <p>A small sample GeoJSON is included at <code>assets/data/mining_titles.geojson</code>. Replace it with your real data or upload via the UI.</p>
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section">
+      <div class="container">
+        <h2>Get In Touch</h2>
+        <p>Have questions about the Tunisian Mining Hub? Contact us for more information.</p>
+        <div class="contact-info">
+          <div class="contact-item">
+            <i class="fas fa-envelope"></i>
+            <h3>Email</h3>
+            <p><a href="mailto:info@tunisianmininghub.tn">info@tunisianmininghub.tn</a></p>
+          </div>
+          <div class="contact-item">
+            <i class="fas fa-phone"></i>
+            <h3>Phone</h3>
+            <p><a href="tel:+216-1-234-5678">+216 1 234 5678</a></p>
+          </div>
+          <div class="contact-item">
+            <i class="fas fa-map-marker-alt"></i>
+            <h3>Location</h3>
+            <p>Tunis, Tunisia</p>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <small>© Tunisian Mining Hub</small>
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h4>Tunisian Mining Hub</h4>
+          <p>Interactive mapping and data visualization for Tunisia's mining sector.</p>
+        </div>
+        <div class="footer-section">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#map-section">Map</a></li>
+            <li><a href="#about">About</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="https://leafletjs.com" target="_blank">Leaflet.js</a></li>
+            <li><a href="https://www.openstreetmap.org" target="_blank">OpenStreetMap</a></li>
+            <li><a href="https://geojson.org" target="_blank">GeoJSON Spec</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Tunisian Mining Hub. All rights reserved.</p>
+      </div>
+    </div>
   </footer>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j8kGgP6jGz0m+U6jv1wHkQ0m3rJg5v9M2H8xyUQ=" crossorigin=""></script>
-  <script src="assets/js/main.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="./assets/js/main.js"></script>
 </body>
 </html>

@@ -17,7 +17,7 @@
       "geometry": { "type": "Point", "coordinates": [8.78, 34.42] },
       "properties": {
         "title_id": "MT-002",
- "name": "Gafsa Phosphate Mine",
+        "name": "Gafsa Phosphate Mine",
         "status": "Producing",
         "commodity": "Phosphate",
         "holder": "Gafsa Phosphate Co"
@@ -32,6 +32,28 @@
         "status": "Active",
         "commodity": "Iron",
         "holder": "Sfax Minerals"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [7.61, 34.76] },
+      "properties": {
+        "title_id": "MT-004",
+        "name": "Djerba Phosphate Extension",
+        "status": "Producing",
+        "commodity": "Phosphate",
+        "holder": "Tunisian Phosphates Group"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [9.81, 35.79] },
+      "properties": {
+        "title_id": "MT-005",
+        "name": "Sousse Iron Deposits",
+        "status": "Active",
+        "commodity": "Iron",
+        "holder": "Sousse Mining Corp"
       }
     }
   ]
