@@ -1,0 +1,38 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [8.83, 35.17] },
+      "properties": {
+        "title_id": "MT-001",
+        "name": "El Kasserine Copper Prospect",
+        "status": "Exploration",
+        "commodity": "Copper",
+        "holder": "Tunisian Mines Ltd"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [8.78, 34.42] },
+      "properties": {
+        "title_id": "MT-002",
+ "name": "Gafsa Phosphate Mine",
+        "status": "Producing",
+        "commodity": "Phosphate",
+        "holder": "Gafsa Phosphate Co"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [10.76, 34.74] },
+      "properties": {
+        "title_id": "MT-003",
+        "name": "Sfax Iron Prospect",
+        "status": "Active",
+        "commodity": "Iron",
+        "holder": "Sfax Minerals"
+      }
+    }
+  ]
+}

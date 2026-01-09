@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tunisian Mining Hub</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+e2w5v1W0UNBx0bQIVzQxj0g3g1kRjvMZf2C6w5mM=" crossorigin="" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>Tunisian Mining Hub</h1>
+    <nav>
+      <a href="#map-section">Map</a>
+      <a href="#about">About</a>
+      <a href="#data">Data</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section id="hero" class="hero">
+      <h2>Explore mining titles across Tunisia</h2>
+      <p>Interactive map of exploration, active and producing mining titles. Upload your GeoJSON or use the sample dataset included.</p>
+    </section>
+
+    <section id="map-section" class="map-section">
+      <aside class="sidebar">
+        <div class="controls">
+          <label for="search">Search title name</label>
+          <input id="search" placeholder="Type a title name and press Enter" />
+
+          <label for="filter-status">Filter by status</label>
+          <select id="filter-status">
+            <option value="all">All</option>
+            <option value="Exploration">Exploration</option>
+            <option value="Active">Active</option>
+            <option value="Producing">Producing</option>
+          </select>
+
+          <label for="upload-geojson">Upload GeoJSON</label>
+          <input id="upload-geojson" type="file" accept=".geojson,.json" />
+
+          <button id="reset-view">Reset view</button>
+        </div>
+
+        <div class="legend">
+          <h3>Legend</h3>
+          <ul>
+            <li><span class="dot copper"></span> Copper</li>
+            <li><span class="dot phosphate"></span> Phosphate</li>
+            <li><span class="dot iron"></span> Iron</li>
+            <li><span class="dot other"></span> Other</li>
+          </ul>
+        </div>
+      </aside>
+
+      <div id="map" class="map"></div>
+    </section>
+
+    <section id="about" class="info">
+      <h2>About</h2>
+      <p>This site provides an interactive map and dataset for mining titles in Tunisia. It is a static site powered by Leaflet and GeoJSON; it is easy to extend to fetch live data from a backend or a GIS service.</p>
+    </section>
+
+    <section id="data" class="info">
+      <h2>Included sample data</h2>
+      <p>A small sample GeoJSON is included at <code>assets/data/mining_titles.geojson</code>. Replace it with your real data or upload via the UI.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <small>© Tunisian Mining Hub</small>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j8kGgP6jGz0m+U6jv1wHkQ0m3rJg5v9M2H8xyUQ=" crossorigin=""></script>
+  <script src="assets/js/main.js"></script>
+</body>
+</html>
