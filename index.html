@@ -1,245 +1,729 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tunisian Mining Hub | Interactive Mining Map</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <link rel="stylesheet" href="./assets/css/style.css" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MineMap Tunisia — Investor Intelligence Platform</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#070b12;--surf:#0e1420;--surf2:#131a27;--brd:#1e2d42;--brd2:#162033;
+  --gold:#f0a500;--gold2:#ffc847;--sand:#ffe8a0;--sand2:#e8c97a;
+  --txt:#e8f0fe;--mut:#7a92b0;--dim:#3d5068;
+  --grn:#00d68f;--blu:#4f9cf9;--org:#ff7b2c;--gry:#546e8a;--red:#ff4d6d;
+  --sb:272px;--tb:50px;
+  --accent:#4f9cf9;--accent2:#00d68f;
+}
+html,body{height:100%;overflow:hidden;font-family:'DM Mono',monospace,sans-serif;background:var(--bg);color:var(--txt);font-size:11px}
+button{cursor:pointer;font-family:inherit}
+input,select{font-family:inherit}
+
+/* ── TOPBAR ─────────────────────── */
+#tb{position:fixed;top:0;left:0;right:0;height:var(--tb);z-index:2000;background:var(--surf);border-bottom:1px solid var(--brd);display:flex;align-items:center;padding:0 14px;gap:9px}
+.logo{display:flex;align-items:center;gap:9px;flex-shrink:0;margin-right:4px}
+.logo svg{width:28px;height:28px}
+.logo-t{font-size:14px;font-weight:600;color:var(--sand);letter-spacing:.02em;line-height:1.1}
+.logo-s{font-size:8px;color:var(--mut);letter-spacing:.12em;text-transform:uppercase}
+.sep{width:1px;height:26px;background:var(--brd);flex-shrink:0}
+.tb-btn{background:transparent;border:1px solid var(--brd2);color:var(--mut);font-size:9px;padding:4px 11px;border-radius:3px;transition:.15s;letter-spacing:.05em;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.tb-btn:hover,.tb-btn.on{border-color:var(--accent);color:var(--gold2);background:rgba(79,156,249,.12)}
+.tb-btn svg{width:11px;height:11px;flex-shrink:0}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.live-pill{font-size:8px;color:var(--grn);border:1px solid rgba(34,170,102,.3);background:rgba(34,170,102,.08);padding:3px 10px;border-radius:20px;letter-spacing:.08em}
+.live-pill::before{content:'● ';animation:blink 2s infinite}
+@keyframes blink{50%{opacity:.3}}
+.ver{font-size:8px;color:var(--dim);letter-spacing:.06em}
+
+/* ── ALERT BANNER ───────────────── */
+#alert-bann{position:fixed;top:var(--tb);left:var(--sb);right:0;z-index:1500;background:rgba(217,119,6,.1);border-bottom:1px solid rgba(217,119,6,.25);padding:6px 14px;display:none;align-items:flex-start;gap:8px}
+#alert-bann.v{display:flex}
+.ab-icon{color:var(--org);font-size:12px;flex-shrink:0;margin-top:1px}
+.ab-body{flex:1}
+.ab-txt{font-size:9px;color:var(--org)}
+.ab-chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
+.ab-chip{font-size:7px;background:rgba(217,119,6,.15);color:var(--org);border:1px solid rgba(217,119,6,.25);padding:1px 7px;border-radius:20px;cursor:pointer;transition:.12s}
+.ab-chip:hover{background:rgba(217,119,6,.25)}
+.ab-cls{background:none;border:none;color:rgba(217,119,6,.5);font-size:14px;line-height:1;padding:0;margin-top:1px}
+
+/* ── LAYOUT ─────────────────────── */
+#app{display:flex;height:100%;padding-top:var(--tb)}
+
+/* ── SIDEBAR ────────────────────── */
+#sb{width:var(--sb);min-width:var(--sb);background:var(--surf);border-right:1px solid var(--brd);display:flex;flex-direction:column;overflow:hidden;height:100%}
+.sec{border-bottom:1px solid var(--brd);padding:10px 13px}
+.slbl{font-size:8px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+
+/* search */
+.srch{position:relative}
+.srch input{width:100%;background:#0d1117;border:1px solid var(--brd2);color:var(--txt);font-size:10px;padding:6px 26px;border-radius:3px;outline:none;transition:.15s}
+.srch input:focus{border-color:var(--gold)}
+.srch input::placeholder{color:var(--dim)}
+.si{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--dim);pointer-events:none;font-size:12px}
+.sc{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--dim);font-size:13px;display:none;padding:0;line-height:1}
+.sc.v{display:block}
+.adv-tog{font-size:8px;color:var(--dim);background:none;border:none;margin-top:6px;cursor:pointer;letter-spacing:.04em;transition:.15s;display:block;text-align:left;padding:0}
+.adv-tog:hover{color:var(--gold)}
+.adv-box{display:none;background:#0d1117;border:1px solid var(--brd2);border-radius:3px;padding:8px;margin-top:6px;flex-direction:column;gap:5px}
+.adv-box.v{display:flex}
+.adv-row{display:flex;align-items:center;gap:4px}
+.adv-row input{flex:1;background:var(--surf);border:1px solid var(--brd2);color:var(--txt);font-size:9px;padding:4px 6px;border-radius:3px;outline:none;min-width:0}
+.adv-row input:focus{border-color:var(--gold)}
+.adv-lbl{font-size:8px;color:var(--dim);flex-shrink:0;width:24px;text-align:center}
+
+/* filters */
+.flt-col{display:flex;flex-direction:column;gap:4px}
+.flt-sel{width:100%;background:#0d1117;border:1px solid var(--brd2);color:var(--txt);font-size:9px;padding:5px 6px;border-radius:3px;outline:none}
+.flt-sel:focus{border-color:var(--gold)}
+.rst{font-size:8px;color:var(--dim);background:none;border:none;text-align:right;margin-top:4px;cursor:pointer;letter-spacing:.04em;transition:.15s;display:block;width:100%}
+.rst:hover{color:var(--gold)}
+
+/* legend */
+.leg-grid{display:flex;flex-direction:column;gap:4px}
+.leg-row{display:flex;align-items:center;gap:7px;cursor:pointer;padding:3px 5px;border-radius:3px;transition:.12s;user-select:none}
+.leg-row:hover{background:rgba(255,255,255,.04)}
+.leg-row.off{opacity:.28}
+.leg-sw{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.leg-n{font-size:9px;color:var(--txt);flex:1}
+.leg-c{font-size:8px;color:var(--dim)}
+
+/* tabs */
+.tabs{display:flex;border-bottom:1px solid var(--brd);flex-shrink:0}
+.tab{flex:1;background:transparent;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;padding:7px 2px;font-size:8px;color:var(--mut);letter-spacing:.07em;text-transform:uppercase;transition:.12s}
+.tab.on{color:var(--gold2);border-bottom-color:var(--gold)}
+.tab:hover:not(.on){color:var(--txt)}
+.notif-dot{width:5px;height:5px;border-radius:50%;background:var(--org);margin-left:3px;animation:blink 2s infinite;display:inline-block;vertical-align:middle}
+.tpane{display:none;flex-direction:column;flex:1;overflow:hidden}
+.tpane.on{display:flex}
+
+/* list */
+#list-pane{flex:1;overflow-y:auto;padding:5px}
+#list-pane::-webkit-scrollbar{width:3px}
+#list-pane::-webkit-scrollbar-thumb{background:var(--brd2)}
+.ri{padding:8px 10px;border-radius:3px;cursor:pointer;border:1px solid transparent;margin-bottom:3px;transition:.12s;animation:fi .18s ease both}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.ri:hover{background:rgba(255,255,255,.04);border-color:var(--brd)}
+.ri.sel{background:rgba(201,168,76,.07);border-color:rgba(201,168,76,.25)}
+.ri-n{font-size:10px;font-weight:500;color:var(--sand);margin-bottom:2px;line-height:1.3}
+.ri-m{font-size:8px;color:var(--mut);display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.ri-dot{width:5px;height:5px;border-radius:1px;flex-shrink:0}
+.bdg{font-size:7px;padding:1px 5px;border-radius:2px;border:1px solid;letter-spacing:.04em;text-transform:uppercase}
+.b-g{background:rgba(34,170,102,.1);color:var(--grn);border-color:rgba(34,170,102,.25)}
+.b-b{background:rgba(58,143,217,.1);color:var(--blu);border-color:rgba(58,143,217,.25)}
+.b-o{background:rgba(217,119,6,.1);color:var(--org);border-color:rgba(217,119,6,.25)}
+.b-x{background:rgba(110,118,129,.1);color:var(--gry);border-color:rgba(110,118,129,.25)}
+
+/* stats pane */
+.stats-scroll{flex:1;overflow-y:auto;padding:10px 13px;display:flex;flex-direction:column;gap:8px}
+.stats-scroll::-webkit-scrollbar{width:3px}
+.stats-scroll::-webkit-scrollbar-thumb{background:var(--brd2)}
+.st-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.st-card{background:#0d1117;border:1px solid var(--brd);border-radius:3px;padding:8px}
+.st-num{font-size:18px;font-weight:600;color:var(--gold2);line-height:1}
+.st-lbl{font-size:7px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.st-sub{font-size:8px;margin-top:1px}
+.ch-title{font-size:7px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.bar-r{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+.bar-l{font-size:8px;color:var(--mut);width:68px;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-t{flex:1;height:10px;background:#0d1117;border-radius:1px;overflow:hidden}
+.bar-f{height:100%;border-radius:1px;transition:width .4s}
+.bar-v{font-size:8px;color:var(--dim);width:18px;text-align:right}
+.donut-w{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.donut-leg{flex:1;display:flex;flex-direction:column;gap:4px}
+.dl-r{display:flex;align-items:center;gap:5px;font-size:8px;color:var(--mut)}
+.dl-d{width:6px;height:6px;border-radius:1px;flex-shrink:0}
+.dl-n{flex:1}
+.dl-c{color:var(--txt);font-weight:500}
+
+/* alerts pane */
+.alt-scroll{flex:1;overflow-y:auto;padding:10px 13px;display:flex;flex-direction:column;gap:4px}
+.alt-scroll::-webkit-scrollbar{width:3px}
+.alt-scroll::-webkit-scrollbar-thumb{background:var(--brd2)}
+.alt-item{padding:8px 10px;border-radius:3px;border:1px solid;margin-bottom:3px;cursor:pointer;transition:.12s}
+.alt-item:hover{opacity:.82}
+.alt-nm{font-size:10px;color:var(--sand);margin-bottom:2px}
+.alt-mt{font-size:8px;margin-top:1px}
+.ac{border-color:rgba(224,82,82,.3);background:rgba(224,82,82,.06)}
+.aw{border-color:rgba(217,119,6,.3);background:rgba(217,119,6,.06)}
+.ax{border-color:rgba(110,118,129,.2);background:rgba(110,118,129,.04)}
+
+/* timeline pane */
+.tl-scroll{flex:1;overflow-y:auto}
+.tl-scroll::-webkit-scrollbar{width:3px}
+.tl-scroll::-webkit-scrollbar-thumb{background:var(--brd2)}
+.tl-yr{padding:6px 13px}
+.tl-yr-h{font-size:8px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--brd)}
+.tl-ev{display:flex;gap:7px;margin-bottom:4px;padding:4px 0;border-bottom:1px solid rgba(33,38,45,.5);cursor:pointer;transition:.12s}
+.tl-ev:hover{opacity:.75}
+.tl-ev:last-child{border-bottom:none}
+.tl-dot{width:6px;height:6px;border-radius:50%;margin-top:3px;flex-shrink:0}
+.tl-b{flex:1}
+.tl-n{font-size:9px;color:var(--sand)}
+.tl-m{font-size:8px;color:var(--mut);margin-top:1px}
+
+/* layers pane */
+.lyr-scroll{flex:1;overflow-y:auto;padding:10px 13px}
+.lyr-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--brd)}
+.lyr-row:last-child{border-bottom:none}
+.lyr-chk{accent-color:var(--gold);flex-shrink:0}
+.lyr-info{flex:1}
+.lyr-nm{font-size:10px;color:var(--sand)}
+.lyr-ds{font-size:8px;color:var(--mut);margin-top:1px}
+.lyr-col{width:8px;height:8px;border-radius:1px;flex-shrink:0}
+
+/* ── MAP ────────────────────────── */
+#map-w{flex:1;position:relative;overflow:hidden}
+#map{width:100%;height:100%;background:#0a0e14}
+
+/* map overlays */
+.ov{position:absolute;z-index:900;pointer-events:none}
+.ov-tl{top:10px;left:10px}
+.ov-tr{top:10px;right:40px}
+.ov-bl{bottom:28px;left:10px}
+.ov-bc{bottom:28px;left:50%;transform:translateX(-50%)}
+.bm-sw{display:flex;gap:3px;pointer-events:all}
+.bm-b{background:rgba(13,17,23,.9);border:1px solid var(--brd2);color:var(--mut);font-size:8px;padding:5px 9px;border-radius:3px;letter-spacing:.06em;text-transform:uppercase;transition:.12s;cursor:pointer;font-family:inherit}
+.bm-b.on,.bm-b:hover{background:rgba(201,168,76,.15);color:var(--gold2);border-color:rgba(201,168,76,.35)}
+.coord-bar{background:rgba(13,17,23,.85);border:1px solid var(--brd);border-radius:3px;font-size:8px;color:var(--mut);padding:3px 9px;letter-spacing:.04em;pointer-events:none}
+.meas-bar{background:rgba(22,27,34,.95);border:1px solid var(--gold);border-radius:3px;font-size:9px;color:var(--gold2);padding:4px 12px;display:none;letter-spacing:.04em;white-space:nowrap;pointer-events:none}
+.meas-bar.v{display:block}
+
+/* detail panel */
+#det{position:absolute;right:0;top:0;bottom:0;width:292px;background:var(--surf);border-left:1px solid var(--brd);
+  transform:translateX(100%);transition:transform .26s cubic-bezier(.4,0,.2,1);z-index:1000;display:flex;flex-direction:column;overflow:hidden}
+#det.open{transform:translateX(0)}
+.dp-hd{padding:12px 13px 10px;border-bottom:1px solid var(--brd);flex-shrink:0}
+.dp-cls{float:right;background:none;border:none;color:var(--mut);font-size:13px;line-height:1;padding:2px;transition:.12s}
+.dp-cls:hover{color:var(--txt)}
+.dp-id{font-size:8px;color:var(--gold);letter-spacing:.12em;margin-bottom:3px}
+.dp-ti{font-size:13px;font-weight:600;color:var(--sand);line-height:1.3;margin-bottom:2px}
+.dp-su{font-size:8px;color:var(--mut)}
+.dp-bd{flex:1;overflow-y:auto;padding:12px 13px}
+.dp-bd::-webkit-scrollbar{width:3px}
+.dp-bd::-webkit-scrollbar-thumb{background:var(--brd2)}
+.dp-sec{font-size:7px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin:12px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--brd)}
+.dp-sec:first-child{margin-top:0}
+.dp-rw{display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(33,38,45,.7)}
+.dp-rw:last-child{border-bottom:none}
+.dp-k{font-size:9px;color:var(--mut);flex-shrink:0;margin-right:6px}
+.dp-v{font-size:9px;color:var(--sand);text-align:right;word-break:break-word;max-width:160px}
+.dp-ft{padding:10px 13px;border-top:1px solid var(--brd);display:flex;gap:5px;flex-shrink:0}
+.dp-act{flex:1;background:transparent;border:1px solid var(--brd2);color:var(--mut);font-size:8px;padding:6px;border-radius:3px;text-align:center;letter-spacing:.05em;transition:.12s;font-family:inherit}
+.dp-act:hover{border-color:var(--gold);color:var(--gold2)}
+.dp-act.pri{background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.3);color:var(--gold2)}
+
+/* validity bar */
+.exp-wrap{margin-top:8px}
+.exp-hd{display:flex;justify-content:space-between;font-size:8px;color:var(--mut);margin-bottom:3px}
+.exp-tr{height:5px;background:#0d1117;border-radius:3px;overflow:hidden}
+.exp-fl{height:100%;border-radius:3px;transition:width .5s}
+
+/* mini timeline in detail */
+.tl-mini{position:relative;padding-left:13px;margin-top:4px}
+.tl-mini::before{content:'';position:absolute;left:4px;top:4px;bottom:4px;width:1px;background:var(--brd2)}
+.tl-it{position:relative;margin-bottom:9px}
+.tl-it:last-child{margin-bottom:0}
+.tl-dt{position:absolute;left:-13px;top:4px;width:7px;height:7px;border-radius:50%;border:1px solid}
+.tl-lb{font-size:8px;color:var(--mut)}
+.tl-vl{font-size:9px;color:var(--sand)}
+.tl-dx{font-size:7px;margin-top:1px}
+
+/* compare bar */
+#cmp-bar{position:absolute;bottom:0;left:0;right:0;z-index:1200;background:var(--surf);border-top:1px solid var(--brd2);
+  padding:8px 13px;display:none;align-items:center;gap:8px}
+#cmp-bar.v{display:flex}
+.cmp-t{font-size:8px;color:var(--mut);letter-spacing:.08em;text-transform:uppercase;flex-shrink:0}
+.cmp-slots{display:flex;gap:5px;flex:1;overflow-x:auto;min-width:0}
+.cmp-slot{background:#0d1117;border:1px solid var(--brd2);border-radius:3px;padding:4px 8px;display:flex;align-items:center;gap:5px;white-space:nowrap;font-size:9px;color:var(--sand);min-width:110px}
+.cmp-sd{width:6px;height:6px;border-radius:1px;flex-shrink:0}
+.cmp-rm{background:none;border:none;color:var(--dim);font-size:11px;margin-left:auto;padding:0 2px;line-height:1}
+.cmp-hint{font-size:8px;color:var(--dim);font-style:italic}
+.cmp-acts{display:flex;gap:5px;flex-shrink:0}
+.cmp-a{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);color:var(--gold2);font-size:8px;padding:5px 10px;border-radius:3px;transition:.12s;font-family:inherit}
+.cmp-a:hover{background:rgba(201,168,76,.2)}
+.cmp-a.d{background:rgba(110,118,129,.1);border-color:rgba(110,118,129,.25);color:var(--mut)}
+
+/* toast */
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--surf2);border:1px solid var(--brd2);color:var(--txt);font-size:9px;padding:6px 16px;border-radius:20px;opacity:0;transition:.25s;pointer-events:none;z-index:9000;white-space:nowrap;letter-spacing:.04em;font-family:inherit}
+#toast.v{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.ok{border-color:rgba(34,170,102,.4);color:var(--grn)}
+#toast.warn{border-color:rgba(217,119,6,.4);color:var(--org)}
+
+@media print{
+  #tb,#sb,#alert-bann,#cmp-bar,.draw-tb,.ov,.leaflet-control-zoom{display:none!important}
+  #app{padding:0}#map-w{position:fixed;inset:0;width:100vw;height:100vh}
+}
+
+/* splash screen */
+#splash{
+  position:fixed;inset:0;z-index:9999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:#070b12;
+  cursor:pointer;
+  transition:opacity .8s cubic-bezier(.4,0,.2,1), transform .8s cubic-bezier(.4,0,.2,1);
+}
+#splash.out{opacity:0;transform:scale(1.04);pointer-events:none}
+
+/* Leaflet overrides */
+.leaflet-control-zoom{border:1px solid var(--brd2)!important;border-radius:3px!important;overflow:hidden}
+.leaflet-control-zoom a{background:var(--surf)!important;color:var(--txt)!important;border-bottom:1px solid var(--brd)!important;line-height:24px!important;width:24px!important;font-size:13px!important;transition:.12s!important}
+.leaflet-control-zoom a:last-child{border-bottom:none!important}
+.leaflet-control-zoom a:hover{background:rgba(79,156,249,.2)!important;color:var(--gold2)!important}
+.leaflet-control-scale-line{background:rgba(13,17,23,.7)!important;border:1px solid var(--brd2)!important;color:var(--mut)!important;font-size:8px!important;padding:1px 5px!important}
+.leaflet-control-attribution{background:rgba(13,17,23,.6)!important;color:var(--dim)!important;font-size:7px!important}
+.leaflet-control-attribution a{color:var(--dim)!important}
+.mpop .leaflet-popup-content-wrapper{background:var(--surf2);border:1px solid var(--brd2);border-radius:5px;box-shadow:0 4px 20px rgba(0,0,0,.6);font-size:10px;color:var(--txt);font-family:'DM Mono',monospace,sans-serif}
+.mpop .leaflet-popup-tip{background:var(--surf2)}
+.mpop .leaflet-popup-content{margin:0;width:204px!important}
+.pop-in{padding:10px 12px}
+.pop-ti{font-size:12px;font-weight:600;color:var(--sand);margin-bottom:3px;line-height:1.3}
+.pop-ty{font-size:8px;color:var(--mut);margin-bottom:7px;letter-spacing:.05em;text-transform:uppercase}
+.pop-rw{display:flex;justify-content:space-between;font-size:9px;padding:3px 0;border-top:1px solid var(--brd)}
+.pop-k{color:var(--mut)}
+.pop-v{color:var(--sand);text-align:right}
+.pop-acts{display:flex;gap:4px;margin-top:8px}
+.pop-b{flex:1;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);color:var(--gold2);font-size:9px;padding:4px;border-radius:3px;cursor:pointer;text-align:center;transition:.12s;font-family:inherit}
+.pop-b:hover{background:rgba(201,168,76,.2)}
+</style>
 </head>
 <body>
-  <header class="site-header">
-    <div class="header-container">
-      <div class="logo-section">
-        <i class="fas fa-mountain"></i>
-        <h1>Tunisian Mining Hub</h1>
-      </div>
-      <nav class="navbar">
-        <a href="#home" class="nav-link active">Home</a>
-        <a href="#map-section" class="nav-link">Map</a>
-        <a href="#stats" class="nav-link">Statistics</a>
-        <a href="#about" class="nav-link">About</a>
-        <a href="#contact" class="nav-link">Contact</a>
-      </nav>
-      <button class="menu-toggle" id="menuToggle">
-        <i class="fas fa-bars"></i>
-      </button>
+
+<!-- Splash Screen -->
+<div id="splash">
+  <div style="text-align:center;color:var(--sand)">
+    <div style="font-size:48px;margin-bottom:20px">⛏️</div>
+    <div style="font-size:24px;font-weight:600;margin-bottom:8px">MineMap Tunisia</div>
+    <div style="font-size:12px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase">Loading Intelligence Platform...</div>
+  </div>
+</div>
+
+<!-- Top Bar -->
+<div id="tb">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2l9 5v10l-9 5-9-5V7l9-5z"/>
+    </svg>
+    <div>
+      <div class="logo-t">MineMap</div>
+      <div class="logo-s">Tunisia</div>
     </div>
-  </header>
+  </div>
+  <div class="sep"></div>
+  <button class="tb-btn">Overview</button>
+  <button class="tb-btn">Filter</button>
+  <div class="tb-right">
+    <div class="live-pill">Live Data</div>
+    <div class="ver">v2.1.0</div>
+  </div>
+</div>
 
-  <main>
-    <!-- Hero Section -->
-    <section id="home" class="hero">
-      <div class="hero-content">
-        <h2>Explore Tunisia's Mining Landscape</h2>
-        <p>Interactive map of exploration, active, and producing mining titles across Tunisia</p>
-        <button class="cta-btn" onclick="document.getElementById('map-section').scrollIntoView({behavior:'smooth'})">
-          Explore Map <i class="fas fa-arrow-right"></i>
-        </button>
+<!-- Main App -->
+<div id="app">
+  <!-- Sidebar -->
+  <div id="sb">
+    <!-- Search Section -->
+    <div class="sec">
+      <div class="slbl">Search</div>
+      <div class="srch">
+        <svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" placeholder="Search claims, sites..."/>
+        <button class="sc">×</button>
       </div>
-      <div class="hero-background"></div>
-    </section>
-
-    <!-- Stats Section -->
-    <section id="stats" class="stats-section">
-      <div class="container">
-        <h2>Mining Sector Overview</h2>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <i class="fas fa-mine"></i>
-            <h3 id="stat-titles">0</h3>
-            <p>Mining Titles</p>
-          </div>
-          <div class="stat-card">
-            <i class="fas fa-gem"></i>
-            <h3 id="stat-commodities">0</h3>
-            <p>Commodity Types</p>
-          </div>
-          <div class="stat-card">
-            <i class="fas fa-chart-pie"></i>
-            <h3 id="stat-producing">0</h3>
-            <p>Producing Mines</p>
-          </div>
-          <div class="stat-card">
-            <i class="fas fa-microscope"></i>
-            <h3 id="stat-exploration">0</h3>
-            <p>Exploration Projects</p>
-          </div>
+      <button class="adv-tog">Advanced Search</button>
+      <div class="adv-box">
+        <div class="adv-row">
+          <span class="adv-lbl">Type</span>
+          <input type="text" placeholder="Exploration, Active..."/>
         </div>
-      </div>
-    </section>
-
-    <!-- Map Section -->
-    <section id="map-section" class="map-section">
-      <div class="container">
-        <h2>Interactive Mining Map</h2>
-        <div class="map-container">
-          <aside class="sidebar">
-            <div class="sidebar-header">
-              <h3><i class="fas fa-sliders-h"></i> Controls</h3>
-            </div>
-            
-            <div class="controls-group">
-              <label for="search"><i class="fas fa-search"></i> Search Title</label>
-              <input id="search" type="text" placeholder="Enter title name..." />
-              <small>Press Enter to search</small>
-            </div>
-
-            <div class="controls-group">
-              <label for="filter-status"><i class="fas fa-filter"></i> Filter by Status</label>
-              <select id="filter-status">
-                <option value="all">All Statuses</option>
-                <option value="Exploration">Exploration</option>
-                <option value="Active">Active</option>
-                <option value="Producing">Producing</option>
-              </select>
-            </div>
-
-            <div class="controls-group">
-              <label for="filter-commodity"><i class="fas fa-cube"></i> Filter by Commodity</label>
-              <select id="filter-commodity">
-                <option value="all">All Commodities</option>
-                <option value="Copper">Copper</option>
-                <option value="Phosphate">Phosphate</option>
-                <option value="Iron">Iron</option>
-              </select>
-            </div>
-
-            <div class="controls-group">
-              <label for="upload-geojson"><i class="fas fa-upload"></i> Upload GeoJSON</label>
-              <input id="upload-geojson" type="file" accept=".geojson,.json" />
-              <small>Upload your custom mining data</small>
-            </div>
-
-            <button id="reset-view" class="btn-primary">
-              <i class="fas fa-redo"></i> Reset View
-            </button>
-
-            <div class="legend">
-              <h3><i class="fas fa-circle-info"></i> Legend</h3>
-              <div class="legend-item">
-                <span class="dot copper"></span>
-                <span>Copper</span>
-              </div>
-              <div class="legend-item">
-                <span class="dot phosphate"></span>
-                <span>Phosphate</span>
-              </div>
-              <div class="legend-item">
-                <span class="dot iron"></span>
-                <span>Iron</span>
-              </div>
-              <div class="legend-item">
-                <span class="dot other"></span>
-                <span>Other</span>
-              </div>
-              <div class="legend-item">
-                <span class="status-exploration"></span>
-                <span>Exploration</span>
-              </div>
-              <div class="legend-item">
-                <span class="status-active"></span>
-                <span>Active</span>
-              </div>
-              <div class="legend-item">
-                <span class="status-producing"></span>
-                <span>Producing</span>
-              </div>
-            </div>
-          </aside>
-
-          <div id="map" class="map"></div>
+        <div class="adv-row">
+          <span class="adv-lbl">Area</span>
+          <input type="text" placeholder="min-max km²"/>
         </div>
-      </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="about" class="about-section">
-      <div class="container">
-        <h2>About This Platform</h2>
-        <div class="about-grid">
-          <div class="about-card">
-            <i class="fas fa-globe"></i>
-            <h3>Interactive Mapping</h3>
-            <p>Explore mining titles across Tunisia with our powerful Leaflet-based interactive map. View details, search, and filter by status or commodity type.</p>
-          </div>
-          <div class="about-card">
-            <i class="fas fa-database"></i>
-            <h3>Data Management</h3>
-            <p>Upload your own GeoJSON datasets to visualize mining data. Easy integration with your existing spatial databases and workflows.</p>
-          </div>
-          <div class="about-card">
-            <i class="fas fa-chart-bar"></i>
-            <h3>Analytics</h3>
-            <p>View real-time statistics and insights about mining titles, commodities, and project status across the region.</p>
-          </div>
-          <div class="about-card">
-            <i class="fas fa-lock"></i>
-            <h3>Secure Access</h3>
-            <p>All data is processed locally in your browser. No server uploads or data sharing without your explicit consent.</p>
-          </div>
+        <div class="adv-row">
+          <span class="adv-lbl">Year</span>
+          <input type="text" placeholder="2020-2026"/>
         </div>
-      </div>
-    </section>
-
-    <!-- Contact Section -->
-    <section id="contact" class="contact-section">
-      <div class="container">
-        <h2>Get In Touch</h2>
-        <p>Have questions about the Tunisian Mining Hub? Contact us for more information.</p>
-        <div class="contact-info">
-          <div class="contact-item">
-            <i class="fas fa-envelope"></i>
-            <h3>Email</h3>
-            <p><a href="mailto:info@tunisianmininghub.tn">info@tunisianmininghub.tn</a></p>
-          </div>
-          <div class="contact-item">
-            <i class="fas fa-phone"></i>
-            <h3>Phone</h3>
-            <p><a href="tel:+216-1-234-5678">+216 1 234 5678</a></p>
-          </div>
-          <div class="contact-item">
-            <i class="fas fa-map-marker-alt"></i>
-            <h3>Location</h3>
-            <p>Tunis, Tunisia</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="container">
-      <div class="footer-content">
-        <div class="footer-section">
-          <h4>Tunisian Mining Hub</h4>
-          <p>Interactive mapping and data visualization for Tunisia's mining sector.</p>
-        </div>
-        <div class="footer-section">
-          <h4>Quick Links</h4>
-          <ul>
-            <li><a href="#home">Home</a></li>
-            <li><a href="#map-section">Map</a></li>
-            <li><a href="#about">About</a></li>
-          </ul>
-        </div>
-        <div class="footer-section">
-          <h4>Resources</h4>
-          <ul>
-            <li><a href="https://leafletjs.com" target="_blank">Leaflet.js</a></li>
-            <li><a href="https://www.openstreetmap.org" target="_blank">OpenStreetMap</a></li>
-            <li><a href="https://geojson.org" target="_blank">GeoJSON Spec</a></li>
-          </ul>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        <p>&copy; 2026 Tunisian Mining Hub. All rights reserved.</p>
       </div>
     </div>
-  </footer>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="./assets/js/main.js"></script>
+    <!-- Filters -->
+    <div class="sec">
+      <div class="slbl">Filters</div>
+      <div class="flt-col">
+        <select class="flt-sel">
+          <option>All Status</option>
+          <option>Exploration</option>
+          <option>Active</option>
+          <option>Producing</option>
+        </select>
+        <select class="flt-sel">
+          <option>All Commodities</option>
+          <option>Copper</option>
+          <option>Phosphate</option>
+          <option>Iron</option>
+        </select>
+        <select class="flt-sel">
+          <option>All Regions</option>
+          <option>Gafsa</option>
+          <option>Tataouine</option>
+          <option>Kasserine</option>
+        </select>
+        <button class="rst">Reset</button>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="sec">
+      <div class="slbl">Legend</div>
+      <div class="leg-grid">
+        <div class="leg-row">
+          <div class="leg-sw" style="background:#ff7b2c"></div>
+          <span class="leg-n">Exploration</span>
+          <span class="leg-c">12</span>
+        </div>
+        <div class="leg-row">
+          <div class="leg-sw" style="background:#4f9cf9"></div>
+          <span class="leg-n">Active</span>
+          <span class="leg-c">8</span>
+        </div>
+        <div class="leg-row">
+          <div class="leg-sw" style="background:#00d68f"></div>
+          <span class="leg-n">Producing</span>
+          <span class="leg-c">5</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab on" data-tab="list">List</button>
+      <button class="tab" data-tab="stats">Stats</button>
+      <button class="tab" data-tab="alerts">Alerts</button>
+      <button class="tab" data-tab="timeline">Timeline</button>
+      <button class="tab" data-tab="layers">Layers</button>
+    </div>
+
+    <!-- List Pane -->
+    <div class="tpane on" id="listPane">
+      <div id="list-pane">
+        <div class="ri">
+          <div class="ri-n">Gafsa South Phosphate</div>
+          <div class="ri-m">
+            <span class="ri-dot" style="background:#00d68f"></span>
+            Producing • 2,450 km²
+            <span class="bdg b-g">Active</span>
+          </div>
+        </div>
+        <div class="ri">
+          <div class="ri-n">Tataouine Copper Prospect</div>
+          <div class="ri-m">
+            <span class="ri-dot" style="background:#4f9cf9"></span>
+            Exploration • 680 km²
+            <span class="bdg b-b">Early Stage</span>
+          </div>
+        </div>
+        <div class="ri">
+          <div class="ri-n">Kasserine Iron Deposit</div>
+          <div class="ri-m">
+            <span class="ri-dot" style="background:#ff7b2c"></span>
+            Exploration • 420 km²
+            <span class="bdg b-o">Pending</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Pane -->
+    <div class="tpane" id="statsPane">
+      <div class="stats-scroll">
+        <div class="st-grid">
+          <div class="st-card">
+            <div class="st-num">25</div>
+            <div class="st-lbl">Total Claims</div>
+          </div>
+          <div class="st-card">
+            <div class="st-num">5,840</div>
+            <div class="st-lbl">Area km²</div>
+          </div>
+          <div class="st-card">
+            <div class="st-num">$2.4B</div>
+            <div class="st-lbl">Est. Value</div>
+          </div>
+          <div class="st-card">
+            <div class="st-num">18</div>
+            <div class="st-lbl">Operators</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="ch-title">By Status</div>
+          <div class="bar-r">
+            <span class="bar-l">Exploration</span>
+            <div class="bar-t"><div class="bar-f" style="width:48%;background:#ff7b2c"></div></div>
+            <span class="bar-v">12</span>
+          </div>
+          <div class="bar-r">
+            <span class="bar-l">Active</span>
+            <div class="bar-t"><div class="bar-f" style="width:32%;background:#4f9cf9"></div></div>
+            <span class="bar-v">8</span>
+          </div>
+          <div class="bar-r">
+            <span class="bar-l">Producing</span>
+            <div class="bar-t"><div class="bar-f" style="width:20%;background:#00d68f"></div></div>
+            <span class="bar-v">5</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerts Pane -->
+    <div class="tpane" id="alertsPane">
+      <div class="alt-scroll">
+        <div class="alt-item ac">
+          <div class="alt-nm">Critical: Seismic Activity</div>
+          <div class="alt-mt">Tataouine region • 2 hours ago</div>
+        </div>
+        <div class="alt-item aw">
+          <div class="alt-nm">Warning: Permit Renewal</div>
+          <div class="alt-mt">Gafsa South • 4 hours ago</div>
+        </div>
+        <div class="alt-item ax">
+          <div class="alt-nm">Info: Environmental Report</div>
+          <div class="alt-mt">Kasserine Iron • 1 day ago</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline Pane -->
+    <div class="tpane" id="timelinePane">
+      <div class="tl-scroll">
+        <div class="tl-yr">
+          <div class="tl-yr-h">2026</div>
+          <div class="tl-ev">
+            <div class="tl-dot" style="background:#00d68f"></div>
+            <div class="tl-b">
+              <div class="tl-n">Gafsa production milestone</div>
+              <div class="tl-m">May 21</div>
+            </div>
+          </div>
+          <div class="tl-ev">
+            <div class="tl-dot" style="background:#4f9cf9"></div>
+            <div class="tl-b">
+              <div class="tl-n">Tataouine exploration phase</div>
+              <div class="tl-m">March 15</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Layers Pane -->
+    <div class="tpane" id="layersPane">
+      <div class="lyr-scroll">
+        <div class="lyr-row">
+          <input type="checkbox" class="lyr-chk" checked/>
+          <div class="lyr-info">
+            <div class="lyr-nm">Mining Claims</div>
+            <div class="lyr-ds">Active mining titles</div>
+          </div>
+          <div class="lyr-col" style="background:#f0a500"></div>
+        </div>
+        <div class="lyr-row">
+          <input type="checkbox" class="lyr-chk" checked/>
+          <div class="lyr-info">
+            <div class="lyr-nm">Infrastructure</div>
+            <div class="lyr-ds">Roads, ports, facilities</div>
+          </div>
+          <div class="lyr-col" style="background:#4f9cf9"></div>
+        </div>
+        <div class="lyr-row">
+          <input type="checkbox" class="lyr-chk"/>
+          <div class="lyr-info">
+            <div class="lyr-nm">Environmental Zones</div>
+            <div class="lyr-ds">Protected areas</div>
+          </div>
+          <div class="lyr-col" style="background:#00d68f"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map Area -->
+  <div id="map-w">
+    <div id="map"></div>
+
+    <!-- Overlays -->
+    <div class="ov ov-tr">
+      <div class="bm-sw">
+        <button class="bm-b on">Satellite</button>
+        <button class="bm-b">Standard</button>
+        <button class="bm-b">Terrain</button>
+      </div>
+    </div>
+
+    <div class="coord-bar ov ov-bl">
+      <span id="coordDisplay">0.00°, 0.00°</span>
+    </div>
+
+    <div class="meas-bar ov ov-bc">
+      Distance: <span>0</span> km
+    </div>
+
+    <!-- Detail Panel -->
+    <div id="det">
+      <div class="dp-hd">
+        <button class="dp-cls">✕</button>
+        <div class="dp-id">CLAIM #2024001</div>
+        <div class="dp-ti">Gafsa South</div>
+        <div class="dp-su">Phosphate • Producing</div>
+      </div>
+      <div class="dp-bd">
+        <div class="dp-sec">Overview</div>
+        <div class="dp-rw">
+          <span class="dp-k">Status</span>
+          <span class="dp-v">Producing</span>
+        </div>
+        <div class="dp-rw">
+          <span class="dp-k">Area</span>
+          <span class="dp-v">2,450 km²</span>
+        </div>
+        <div class="dp-rw">
+          <span class="dp-k">Operator</span>
+          <span class="dp-v">OCP Group</span>
+        </div>
+        <div class="dp-rw">
+          <span class="dp-k">Commodity</span>
+          <span class="dp-v">Phosphate</span>
+        </div>
+
+        <div class="dp-sec">Validity</div>
+        <div class="exp-wrap">
+          <div class="exp-hd">
+            <span>Expires in 842 days</span>
+            <span style="color:var(--grn)">97%</span>
+          </div>
+          <div class="exp-tr">
+            <div class="exp-fl" style="width:97%;background:var(--grn)"></div>
+          </div>
+        </div>
+
+        <div class="dp-sec">Timeline</div>
+        <div class="tl-mini">
+          <div class="tl-it">
+            <div class="tl-dt" style="border-color:#00d68f;background:#00d68f"></div>
+            <div class="tl-lb">Licensed</div>
+            <div class="tl-vl">2020-03-15</div>
+          </div>
+          <div class="tl-it">
+            <div class="tl-dt" style="border-color:#4f9cf9;background:#4f9cf9"></div>
+            <div class="tl-lb">Production Start</div>
+            <div class="tl-vl">2022-01-20</div>
+          </div>
+          <div class="tl-it">
+            <div class="tl-dt" style="border-color:#f0a500;background:#f0a500"></div>
+            <div class="tl-lb">Last Update</div>
+            <div class="tl-vl">2026-05-21</div>
+          </div>
+        </div>
+      </div>
+      <div class="dp-ft">
+        <button class="dp-act">Export</button>
+        <button class="dp-act pri">Compare</button>
+      </div>
+    </div>
+
+    <!-- Compare Bar -->
+    <div id="cmp-bar">
+      <span class="cmp-t">Compare:</span>
+      <div class="cmp-slots">
+        <div class="cmp-slot">
+          <div class="cmp-sd" style="background:#f0a500"></div>
+          Gafsa South
+          <button class="cmp-rm">×</button>
+        </div>
+        <div class="cmp-slot">
+          <div class="cmp-sd" style="background:#4f9cf9"></div>
+          Tataouine Cu
+          <button class="cmp-rm">×</button>
+        </div>
+      </div>
+      <div class="cmp-acts">
+        <button class="cmp-a">Compare</button>
+        <button class="cmp-a d">Clear</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Script -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Initialize map
+const map = L.map('map').setView([35.8989, 9.5375], 7);
+
+// Default basemap
+L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycW1vdTMyNDkycGYifQ.rJcFIG214AriISLbB6B5aw', {
+  attribution: '© Mapbox',
+  maxZoom: 18
+}).addTo(map);
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+    document.querySelectorAll('.tpane').forEach(p => p.classList.remove('on'));
+    tab.classList.add('on');
+    document.getElementById(tab.dataset.tab + 'Pane').classList.add('on');
+  });
+});
+
+// Detail panel
+document.querySelector('.dp-cls').addEventListener('click', () => {
+  document.getElementById('det').classList.remove('open');
+});
+
+// Splash screen
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('out');
+  }, 1500);
+});
+
+// Sample markers
+const sites = [
+  {name: 'Gafsa South', lat: 34.82, lng: 8.64, type: 'Producing', color: '#00d68f'},
+  {name: 'Tataouine Copper', lat: 32.93, lng: 11.02, type: 'Exploration', color: '#4f9cf9'},
+  {name: 'Kasserine Iron', lat: 35.17, lng: 8.77, type: 'Exploration', color: '#ff7b2c'}
+];
+
+sites.forEach(site => {
+  L.circleMarker([site.lat, site.lng], {
+    radius: 8,
+    fillColor: site.color,
+    color: site.color,
+    weight: 2,
+    opacity: 0.8,
+    fillOpacity: 0.7,
+    className: 'mpop'
+  }).bindPopup(`
+    <div class="pop-in">
+      <div class="pop-ti">${site.name}</div>
+      <div class="pop-ty">${site.type}</div>
+      <div class="pop-acts">
+        <button class="pop-b" onclick="document.getElementById('det').classList.add('open')">Details</button>
+      </div>
+    </div>
+  `).addTo(map);
+});
+
+// Update coords on mousemove
+map.on('mousemove', (e) => {
+  document.getElementById('coordDisplay').textContent = 
+    e.latlng.lat.toFixed(2) + '°, ' + e.latlng.lng.toFixed(2) + '°';
+});
+</script>
 </body>
 </html>
