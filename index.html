@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Tunisian Mining Hub — Interactive Mining Map</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -21,7 +21,8 @@ button{cursor:pointer;font-family:inherit}
 input,select{font-family:inherit}
 
 /* ── TOPBAR ─────────────────────── */
-#tb{position:fixed;top:0;left:0;right:0;height:var(--tb);z-index:2000;background:var(--surf);border-bottom:1px solid var(--brd);display:flex;align-items:center;padding:0 14px;gap:9px}
+#tb{position:fixed;top:0;left:0;right:0;height:var(--tb);z-index:2000;background:var(--surf);border-bottom:1px solid var(--brd);display:none;align-items:center;padding:0 14px;gap:9px}
+body.map-mode #tb{display:flex}
 .logo{display:flex;align-items:center;gap:9px;flex-shrink:0;margin-right:4px}
 .logo svg{width:28px;height:28px}
 .logo-t{font-size:14px;font-weight:600;color:var(--sand);letter-spacing:.02em;line-height:1.1}
@@ -48,45 +49,145 @@ input,select{font-family:inherit}
 .ab-cls{background:none;border:none;color:rgba(217,119,6,.5);font-size:14px;line-height:1;padding:0;margin-top:1px}
 
 /* ── LAYOUT ─────────────────────── */
-#app{display:flex;height:100%;padding-top:var(--tb)}
+#app{display:none;flex-direction:row;height:100%;width:100%}
+body.map-mode #app{
+  display:flex !important;
+  position:fixed;left:0;right:0;bottom:0;top:var(--tb);
+  height:auto;width:100%;z-index:850;
+  padding-top:0;
+}
+body.map-mode #home{
+  display:none !important;visibility:hidden;pointer-events:none;opacity:0;
+}
+body.map-mode #map-w,#map-w #map{height:100%;min-height:0}
 
 /* ── SIDEBAR ────────────────────── */
 #sb{width:var(--sb);min-width:var(--sb);background:var(--surf);border-right:1px solid var(--brd);display:flex;flex-direction:column;overflow:hidden;height:100%}
-.sec{border-bottom:1px solid var(--brd);padding:10px 13px}
-.slbl{font-size:8px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+.sec{border-bottom:1px solid var(--brd);padding:11px 13px}
+.slbl{font-size:7px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.slbl-cnt{color:var(--gold);font-size:9px;letter-spacing:0;font-weight:500}
+
+/* sidebar header strip */
+#sb-header{
+  padding:11px 13px 9px;border-bottom:1px solid var(--brd);flex-shrink:0;
+  background:linear-gradient(to bottom,rgba(201,168,76,.04),transparent);
+}
+.sb-title{font-size:11px;font-weight:500;color:var(--sand);letter-spacing:.02em;margin-bottom:1px}
+.sb-sub{font-size:8px;color:var(--dim);letter-spacing:.06em}
+.sb-res-row{display:flex;align-items:center;justify-content:space-between;margin-top:7px}
+.sb-res-pill{
+  font-size:8px;color:var(--gold2);letter-spacing:.06em;
+  background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);
+  padding:2px 9px;border-radius:20px;
+}
+.sb-res-pill span{font-weight:500}
+.sb-rst-all{
+  font-size:8px;color:var(--dim);background:none;border:none;
+  cursor:pointer;letter-spacing:.06em;transition:.15s;
+  display:flex;align-items:center;gap:3px;
+}
+.sb-rst-all:hover{color:var(--gold)}
+.sb-rst-all.active{color:rgba(255,100,100,.7)}
 
 /* search */
 .srch{position:relative}
-.srch input{width:100%;background:#0d1117;border:1px solid var(--brd2);color:var(--txt);font-size:10px;padding:6px 26px;border-radius:3px;outline:none;transition:.15s}
-.srch input:focus{border-color:var(--gold)}
+.srch input{width:100%;background:#0a0e18;border:1px solid var(--brd2);color:var(--txt);font-size:10px;padding:7px 28px 7px 28px;border-radius:3px;outline:none;transition:.15s}
+.srch input:focus{border-color:var(--gold);background:#0c1020}
 .srch input::placeholder{color:var(--dim)}
-.si{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--dim);pointer-events:none;font-size:12px}
+.si{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--dim);pointer-events:none;font-size:12px}
 .sc{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--dim);font-size:13px;display:none;padding:0;line-height:1}
 .sc.v{display:block}
 .adv-tog{font-size:8px;color:var(--dim);background:none;border:none;margin-top:6px;cursor:pointer;letter-spacing:.04em;transition:.15s;display:block;text-align:left;padding:0}
 .adv-tog:hover{color:var(--gold)}
-.adv-box{display:none;background:#0d1117;border:1px solid var(--brd2);border-radius:3px;padding:8px;margin-top:6px;flex-direction:column;gap:5px}
+.adv-box{display:none;background:#0a0e18;border:1px solid var(--brd2);border-radius:3px;padding:8px;margin-top:6px;flex-direction:column;gap:5px}
 .adv-box.v{display:flex}
 .adv-row{display:flex;align-items:center;gap:4px}
 .adv-row input{flex:1;background:var(--surf);border:1px solid var(--brd2);color:var(--txt);font-size:9px;padding:4px 6px;border-radius:3px;outline:none;min-width:0}
 .adv-row input:focus{border-color:var(--gold)}
 .adv-lbl{font-size:8px;color:var(--dim);flex-shrink:0;width:24px;text-align:center}
 
-/* filters */
-.flt-col{display:flex;flex-direction:column;gap:4px}
-.flt-sel{width:100%;background:#0d1117;border:1px solid var(--brd2);color:var(--txt);font-size:9px;padding:5px 6px;border-radius:3px;outline:none}
-.flt-sel:focus{border-color:var(--gold)}
-.rst{font-size:8px;color:var(--dim);background:none;border:none;text-align:right;margin-top:4px;cursor:pointer;letter-spacing:.04em;transition:.15s;display:block;width:100%}
+/* ── CHIP-BASED FILTERS ── */
+.flt-col{display:flex;flex-direction:column;gap:10px}
+/* keep hidden selects so doFilter() still works */
+.flt-sel{display:none}
+.flt-chips{display:flex;flex-wrap:wrap;gap:4px}
+.flt-chip{
+  font-size:8px;letter-spacing:.06em;text-transform:uppercase;
+  padding:3px 9px;border-radius:20px;border:1px solid var(--brd2);
+  color:var(--mut);background:transparent;
+  cursor:pointer;transition:all .15s;font-family:inherit;
+  display:flex;align-items:center;gap:4px;
+  white-space:nowrap;
+}
+.flt-chip:hover{border-color:var(--dim);color:var(--txt);background:rgba(255,255,255,.03)}
+.flt-chip.on{color:var(--bg);border-color:transparent}
+/* mineral chip colours */
+.chip-phosphate.on{background:#c9a84c;color:#070b12}
+.chip-iron.on{background:#e05a3a;color:#fff}
+.chip-zinc.on{background:#4f9cf9;color:#fff}
+.chip-limestone.on{background:#7a92b0;color:#070b12}
+.chip-baryte.on{background:#00d68f;color:#070b12}
+.chip-silica.on{background:#a8b8cc;color:#070b12}
+.chip-gypsum.on{background:#9b7ed8;color:#fff}
+.chip-salt.on{background:#c8d8e8;color:#070b12}
+.chip-oilshale.on{background:#5c7a4a;color:#fff}
+/* mineral dot icon */
+.chip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+/* permit type chips */
+.chip-concession.on{background:#ffc847;color:#070b12}
+.chip-permit.on{background:#4f9cf9;color:#fff}
+.chip-research.on{background:#9b7ed8;color:#fff}
+.chip-expired.on{background:#546e8a;color:#fff}
+/* status chips */
+.chip-active.on{background:#00d68f;color:#070b12}
+.chip-exp-stat.on{background:#546e8a;color:#fff}
+/* region chips */
+.chip-region.on{background:rgba(201,168,76,.2);border-color:rgba(201,168,76,.5);color:var(--gold2)}
+
+.flt-sub{font-size:7px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;margin-top:2px}
+
+.rst{font-size:8px;color:var(--dim);background:none;border:none;text-align:right;margin-top:2px;cursor:pointer;letter-spacing:.04em;transition:.15s;display:block;width:100%}
 .rst:hover{color:var(--gold)}
 
-/* legend */
-.leg-grid{display:flex;flex-direction:column;gap:4px}
-.leg-row{display:flex;align-items:center;gap:7px;cursor:pointer;padding:3px 5px;border-radius:3px;transition:.12s;user-select:none}
-.leg-row:hover{background:rgba(255,255,255,.04)}
+/* ── LEGEND ── */
+.leg-grid{display:flex;flex-direction:column;gap:3px}
+.leg-row{display:flex;align-items:center;gap:7px;cursor:pointer;padding:4px 6px;border-radius:3px;transition:.12s;user-select:none;border:1px solid transparent}
+.leg-row:hover{background:rgba(255,255,255,.03);border-color:var(--brd2)}
 .leg-row.off{opacity:.28}
-.leg-sw{width:9px;height:9px;border-radius:2px;flex-shrink:0}
-.leg-n{font-size:9px;color:var(--txt);flex:1}
-.leg-c{font-size:8px;color:var(--dim)}
+.leg-sw{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.leg-n{font-size:9px;color:var(--txt);flex:1;letter-spacing:.02em}
+.leg-c{font-size:8px;color:var(--dim);letter-spacing:.04em}
+.leg-bar{height:2px;border-radius:1px;margin-top:2px;flex:1;opacity:.5}
+
+/* map header bar */
+#map-hdr{
+  position:absolute;top:0;left:0;right:0;z-index:950;
+  height:36px;background:rgba(7,11,18,.88);
+  border-bottom:1px solid rgba(30,45,66,.6);
+  backdrop-filter:blur(8px);
+  display:flex;align-items:center;
+  padding:0 12px;gap:8px;pointer-events:all;
+}
+.mhdr-title{font-size:8px;color:var(--mut);letter-spacing:.12em;text-transform:uppercase;flex-shrink:0}
+.mhdr-sep{width:1px;height:14px;background:var(--brd);flex-shrink:0}
+.mhdr-filters{display:flex;gap:5px;flex:1;overflow:hidden;align-items:center}
+.mhdr-tag{
+  font-size:7px;color:var(--gold);letter-spacing:.08em;
+  background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);
+  padding:2px 8px;border-radius:20px;white-space:nowrap;
+  display:flex;align-items:center;gap:4px;
+}
+.mhdr-tag-rm{background:none;border:none;color:rgba(201,168,76,.6);font-size:10px;padding:0;cursor:pointer;line-height:1}
+.mhdr-tag-rm:hover{color:var(--gold2)}
+.mhdr-none{font-size:8px;color:var(--dim);font-style:italic}
+.mhdr-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.mhdr-cnt{font-size:8px;color:var(--gold2);letter-spacing:.04em}
+.mhdr-home{
+  font-size:8px;color:var(--mut);letter-spacing:.08em;
+  background:none;border:1px solid var(--brd2);
+  padding:3px 10px;border-radius:2px;cursor:pointer;transition:.15s;font-family:inherit;
+}
+.mhdr-home:hover{color:var(--gold);border-color:rgba(201,168,76,.3)}
 
 /* tabs */
 .tabs{display:flex;border-bottom:1px solid var(--brd);flex-shrink:0}
@@ -516,6 +617,614 @@ input,select{font-family:inherit}
 }
 .snav-login:hover{background:rgba(201,168,76,.2);border-color:rgba(201,168,76,.55);color:var(--gold2)}
 
+/* ═══════════════════════════════════════════════════
+   HOME PAGE
+   ═══════════════════════════════════════════════════ */
+#home{
+  position:fixed;inset:0;z-index:900;
+  background:var(--bg);
+  display:none;flex-direction:column;
+  overflow:hidden;
+  opacity:0;transition:opacity .55s ease;
+  font-family:'Inter',system-ui,sans-serif;
+}
+#home.v{display:flex}
+#home.in{opacity:1}
+
+/* ── Gamma-style app shell (scroll + cards) ── */
+#gamma-nav{
+  flex-shrink:0;height:56px;z-index:20;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 20px;gap:16px;
+  background:rgba(7,11,18,.82);border-bottom:1px solid var(--brd);
+  backdrop-filter:blur(14px);
+}
+.gamma-nav-in{
+  width:100%;max-width:1100px;display:flex;align-items:center;gap:12px;
+}
+.gamma-logo{display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0}
+.gamma-logo-t{font-size:13px;font-weight:600;color:var(--sand);letter-spacing:-.01em}
+.gamma-logo-s{font-size:10px;color:var(--dim);font-weight:400}
+.gamma-pills{
+  display:flex;align-items:center;gap:4px;flex:1;
+  overflow-x:auto;padding:2px 0;scrollbar-width:none;
+}
+.gamma-pills::-webkit-scrollbar{display:none}
+.gamma-pill{
+  background:transparent;border:none;color:var(--mut);
+  font-size:11px;font-weight:500;padding:8px 14px;border-radius:999px;
+  cursor:pointer;white-space:nowrap;transition:.15s;
+}
+.gamma-pill:hover{color:var(--txt);background:rgba(255,255,255,.05)}
+.gamma-pill.active{color:var(--txt);background:rgba(201,168,76,.14);box-shadow:0 0 0 1px rgba(201,168,76,.25)}
+.gamma-pill.map-pill{color:var(--blu)}
+.gamma-pill.map-pill:hover{background:rgba(79,156,249,.12)}
+.gamma-nav-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+#gamma-wrap{flex:1;display:flex;min-height:0;position:relative}
+#gamma-canvas{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  scroll-behavior:smooth;padding:28px 20px 80px;
+}
+#gamma-canvas::-webkit-scrollbar{width:6px}
+#gamma-canvas::-webkit-scrollbar-thumb{background:var(--brd);border-radius:6px}
+#gamma-strip{
+  width:52px;flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;padding:12px 6px;
+  border-left:1px solid var(--brd);
+  background:rgba(14,20,32,.6);
+}
+.g-strip-btn{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  background:none;border:none;cursor:pointer;padding:6px 4px;
+  opacity:.45;transition:.15s;
+}
+.g-strip-btn:hover,.g-strip-btn.active{opacity:1}
+.g-strip-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--dim);transition:.15s;
+}
+.g-strip-btn.active .g-strip-dot{
+  background:var(--gold2);box-shadow:0 0 10px rgba(255,200,71,.45);
+  transform:scale(1.2);
+}
+.g-strip-lbl{
+  font-size:7px;color:var(--dim);letter-spacing:.04em;
+  writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);
+  max-height:52px;overflow:hidden;
+}
+.gamma-sec{scroll-margin-top:72px;margin-bottom:8px}
+.gamma-inner{max-width:920px;margin:0 auto}
+.gamma-sec-label{
+  font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--blu);margin-bottom:14px;
+}
+.gv-card{
+  background:var(--surf);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:16px;
+  padding:28px 32px;
+  margin-bottom:16px;
+  box-shadow:0 8px 32px rgba(0,0,0,.22);
+}
+.gv-card-sm{padding:20px 24px}
+.gv-hero{
+  background:
+    radial-gradient(ellipse 90% 70% at 80% 20%,rgba(201,168,76,.12) 0%,transparent 55%),
+    radial-gradient(ellipse 60% 50% at 10% 80%,rgba(79,156,249,.08) 0%,transparent 50%),
+    var(--surf);
+  padding:40px 36px 36px;
+}
+.gv-hero-t{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(32px,4vw,48px);font-weight:300;line-height:1.08;
+  color:var(--txt);margin-bottom:12px;
+}
+.gv-hero-t em{font-style:italic;color:var(--gold2)}
+.gv-hero-d{font-size:13px;color:var(--mut);line-height:1.65;max-width:520px;margin-bottom:20px}
+.gv-hero-actions{display:flex;flex-wrap:wrap;gap:10px}
+.gv-btn{
+  font-size:11px;font-weight:500;padding:10px 18px;border-radius:10px;
+  border:1px solid var(--brd2);background:transparent;color:var(--mut);
+  cursor:pointer;transition:.15s;
+}
+.gv-btn:hover{border-color:var(--dim);color:var(--txt)}
+.gv-btn-primary{
+  background:linear-gradient(135deg,rgba(201,168,76,.35),rgba(240,165,0,.2));
+  border-color:rgba(201,168,76,.45);color:var(--gold2);
+}
+.gv-btn-primary:hover{background:rgba(201,168,76,.4);color:#fff}
+.gv-bento{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.gv-bento .dash-widget,.gv-bento>.gv-card-sm{margin-bottom:0}
+.dash-hdr{margin-bottom:16px}
+.dash-hdr-t{
+  font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;
+  color:var(--txt);line-height:1.15;margin-bottom:6px;
+}
+.dash-hdr-t em{font-style:italic;color:var(--gold2)}
+.dash-hdr-d{font-size:12px;color:var(--mut);line-height:1.6;max-width:520px}
+.dash-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.dash-kpi{
+  background:var(--surf2);border:1px solid var(--brd2);border-radius:12px;
+  padding:16px 18px;
+}
+.dash-kpi-n{
+  font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;
+  color:var(--gold2);line-height:1;
+}
+.dash-kpi-l{font-size:10px;color:var(--dim);letter-spacing:.06em;margin-top:6px}
+.dash-kpi-s{font-size:10px;color:var(--grn);margin-top:4px}
+.dash-kpi-warn .dash-kpi-s{color:var(--org)}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.dash-widget{
+  background:var(--surf2);border:1px solid var(--brd2);border-radius:12px;
+  padding:18px 20px;min-height:120px;
+}
+.dash-widget-wide{grid-column:1/-1}
+.dash-w-t{
+  font-size:11px;font-weight:600;color:var(--txt);letter-spacing:.02em;
+  margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;
+}
+.dash-w-more{font-size:10px;color:var(--mut);background:none;border:none;cursor:pointer}
+.dash-w-more:hover{color:var(--gold)}
+.dash-list{display:flex;flex-direction:column;gap:6px}
+.dash-li{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:10px 12px;background:rgba(0,0,0,.15);border:1px solid var(--brd2);
+  border-radius:8px;font-size:11px;cursor:pointer;transition:.12s;
+}
+.dash-li:hover{border-color:var(--brd);background:rgba(255,255,255,.03)}
+.dash-li-n{color:var(--txt);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-li-m{color:var(--dim);font-size:10px;flex-shrink:0}
+.dash-actions{display:flex;flex-wrap:wrap;gap:8px}
+.dash-empty{font-size:11px;color:var(--dim);padding:20px 0;text-align:center}
+.pg-table,.pg-toolbar,.pg-search input,.pg-fsel,.pg-btn{font-family:'DM Mono',monospace;font-size:10px}
+.gamma-inner .pg-card{border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.gamma-inner .pg-inv-grid .pg-card{background:var(--surf2)}
+@media(max-width:900px){
+  #gamma-strip{display:none}
+  .dash-kpis{grid-template-columns:repeat(2,1fr)}
+  .gv-bento,.dash-grid{grid-template-columns:1fr}
+  .gamma-pills{max-width:50vw}
+}
+
+/* ── home topbar ── */
+#hnav{
+  position:sticky;top:0;z-index:10;
+  height:52px;min-height:52px;
+  background:rgba(7,11,18,.92);
+  border-bottom:1px solid rgba(30,45,66,.7);
+  backdrop-filter:blur(12px);
+  display:flex;align-items:center;
+  padding:0 40px;gap:0;
+  flex-shrink:0;
+}
+.hn-logo{display:flex;align-items:center;gap:10px;margin-right:32px}
+.hn-logo svg{width:24px;height:24px}
+.hn-logo-t{font-size:13px;font-weight:500;color:var(--sand);letter-spacing:.02em;font-family:'DM Mono',monospace}
+.hn-logo-sub{font-size:7px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase}
+.hn-sep{width:1px;height:22px;background:var(--brd);margin:0 4px;flex-shrink:0}
+.hn-link{
+  background:none;border:none;
+  color:var(--mut);font-family:'DM Mono',monospace;
+  font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  padding:6px 12px;border-radius:2px;cursor:pointer;
+  transition:color .15s,background .15s;white-space:nowrap;
+}
+.hn-link:hover,.hn-link.active{color:var(--gold2);background:rgba(255,200,71,.07)}
+.hn-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.hn-map-btn{
+  background:rgba(201,168,76,.12);
+  border:1px solid rgba(201,168,76,.4);
+  color:var(--gold2);
+  font-family:'DM Mono',monospace;font-size:9px;
+  letter-spacing:.12em;text-transform:uppercase;
+  padding:7px 18px;border-radius:2px;cursor:pointer;
+  transition:all .18s;
+}
+.hn-map-btn:hover{background:rgba(201,168,76,.24);border-color:rgba(201,168,76,.65)}
+.hn-lang{
+  background:none;border:1px solid var(--brd);
+  color:var(--mut);font-family:'DM Mono',monospace;
+  font-size:9px;letter-spacing:.08em;
+  padding:5px 10px;border-radius:2px;cursor:pointer;transition:.15s;
+}
+.hn-lang:hover{border-color:var(--dim);color:var(--txt)}
+
+/* ── home sections ── */
+.h-section{width:100%;max-width:1200px;margin:0 auto;padding:0 40px}
+
+/* ── hero ── */
+#h-hero{
+  position:relative;min-height:560px;display:flex;align-items:center;
+  overflow:hidden;padding:80px 40px;
+}
+#h-hero-bg{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 60% 40%,rgba(201,168,76,.07) 0%,transparent 70%),
+             radial-gradient(ellipse 50% 40% at 30% 70%,rgba(79,156,249,.05) 0%,transparent 60%);
+}
+.h-hero-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:60px;
+  align-items:center;width:100%;max-width:1200px;margin:0 auto;
+  position:relative;z-index:2;
+}
+.h-eyebrow{
+  font-size:9px;color:rgba(79,156,249,.85);letter-spacing:.22em;
+  text-transform:uppercase;margin-bottom:20px;
+}
+.h-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(36px,4.5vw,64px);
+  font-weight:300;line-height:1.08;color:var(--txt);
+  margin-bottom:20px;
+}
+.h-title em{
+  font-style:italic;
+  background:linear-gradient(135deg,#ffc847,#f0a500);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.h-desc{
+  font-size:11px;color:var(--mut);line-height:1.9;
+  max-width:440px;margin-bottom:32px;letter-spacing:.02em;
+}
+.h-cta-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.h-cta-primary{
+  background:linear-gradient(135deg,rgba(201,168,76,.22),rgba(240,165,0,.14));
+  border:1px solid rgba(201,168,76,.5);
+  color:var(--gold2);font-family:'DM Mono',monospace;
+  font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  padding:11px 24px;border-radius:2px;cursor:pointer;
+  transition:all .2s;
+}
+.h-cta-primary:hover{background:rgba(201,168,76,.3);border-color:rgba(201,168,76,.75);transform:translateY(-1px)}
+.h-cta-secondary{
+  background:none;border:1px solid var(--brd);
+  color:var(--mut);font-family:'DM Mono',monospace;
+  font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  padding:11px 20px;border-radius:2px;cursor:pointer;transition:all .2s;
+}
+.h-cta-secondary:hover{border-color:var(--dim);color:var(--txt)}
+.h-trust{display:flex;align-items:center;gap:16px;margin-top:24px;padding-top:24px;border-top:1px solid var(--brd2)}
+.h-trust-item{display:flex;align-items:center;gap:6px;font-size:8px;color:var(--dim);letter-spacing:.06em}
+.h-trust-dot{width:5px;height:5px;border-radius:50%;background:var(--grn);animation:blink 2s infinite}
+
+/* ── map preview card ── */
+.h-map-card{
+  background:var(--surf);border:1px solid var(--brd);
+  border-radius:6px;overflow:hidden;position:relative;
+}
+.h-map-card-top{
+  height:200px;background:var(--surf2);position:relative;overflow:hidden;
+}
+.h-map-mock{
+  width:100%;height:100%;position:relative;
+  background:linear-gradient(135deg,#0a1220 0%,#0d1829 50%,#0a1421 100%);
+}
+.h-map-dot{position:absolute;border-radius:50%;animation:map-pulse 2.5s ease-in-out infinite}
+@keyframes map-pulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.3);opacity:.5}}
+.h-map-line{position:absolute;background:rgba(201,168,76,.12);transform-origin:0 0}
+.h-map-badge{
+  position:absolute;top:10px;left:12px;
+  font-size:7px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;
+  background:rgba(7,11,18,.75);border:1px solid rgba(201,168,76,.2);
+  padding:3px 9px;border-radius:20px;backdrop-filter:blur(4px);
+}
+.h-map-live{
+  position:absolute;top:10px;right:12px;
+  font-size:7px;color:var(--grn);letter-spacing:.1em;
+  background:rgba(7,11,18,.75);border:1px solid rgba(0,214,143,.2);
+  padding:3px 9px;border-radius:20px;backdrop-filter:blur(4px);
+}
+.h-map-live::before{content:'● ';animation:blink 2s infinite}
+.h-map-body{padding:14px 16px}
+.h-map-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--brd2)}
+.h-map-stat{
+  padding:12px 8px;text-align:center;
+  border-right:1px solid var(--brd2);
+}
+.h-map-stat:last-child{border-right:none}
+.h-map-stat-n{
+  font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;
+  background:linear-gradient(135deg,#ffc847,#f0a500);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  line-height:1;margin-bottom:3px;
+}
+.h-map-stat-l{font-size:7px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase}
+.h-map-open{
+  width:100%;padding:10px;
+  background:rgba(201,168,76,.08);border:none;border-top:1px solid var(--brd2);
+  color:var(--gold);font-family:'DM Mono',monospace;font-size:9px;
+  letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:.18s;
+}
+.h-map-open:hover{background:rgba(201,168,76,.16);color:var(--gold2)}
+
+/* ── sector stats bar ── */
+#h-stats{
+  padding:32px 0;
+  border-top:1px solid var(--brd);border-bottom:1px solid var(--brd);
+  margin-bottom:0;background:var(--surf);
+}
+.h-stats-grid{
+  display:grid;grid-template-columns:repeat(6,1fr);gap:0;
+}
+.h-stat{
+  padding:20px 24px;border-right:1px solid var(--brd);text-align:center;
+}
+.h-stat:last-child{border-right:none}
+.h-stat-n{
+  font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;
+  background:linear-gradient(135deg,#ffc847,#f0a500);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  line-height:1;margin-bottom:4px;
+}
+.h-stat-l{font-size:8px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;line-height:1.4}
+.h-stat-sub{font-size:8px;color:rgba(79,156,249,.7);letter-spacing:.06em;margin-top:2px}
+
+/* ── section titles ── */
+.h-sec-head{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  margin-bottom:24px;padding-top:56px;padding-bottom:0;
+}
+.h-sec-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:28px;font-weight:300;color:var(--txt);line-height:1.1;
+}
+.h-sec-title em{font-style:italic;color:var(--gold2)}
+.h-sec-tag{font-size:8px;color:var(--blu);letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}
+.h-sec-more{
+  font-size:8px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase;
+  background:none;border:none;cursor:pointer;transition:.15s;
+  display:flex;align-items:center;gap:4px;
+}
+.h-sec-more:hover{color:var(--gold)}
+
+/* ── opportunities grid ── */
+.h-opps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding-bottom:48px}
+.h-opp{
+  background:var(--surf);border:1px solid var(--brd);
+  border-radius:4px;overflow:hidden;
+  transition:border-color .18s,transform .18s;cursor:pointer;
+}
+.h-opp:hover{border-color:rgba(201,168,76,.35);transform:translateY(-2px)}
+.h-opp-head{
+  padding:14px 16px 10px;
+  border-bottom:1px solid var(--brd2);
+  display:flex;align-items:flex-start;justify-content:space-between;gap:8px;
+}
+.h-opp-mineral{
+  font-size:7px;color:var(--gold);letter-spacing:.14em;text-transform:uppercase;
+  background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);
+  padding:2px 8px;border-radius:20px;white-space:nowrap;
+}
+.h-opp-status{
+  font-size:7px;letter-spacing:.1em;text-transform:uppercase;
+  padding:2px 8px;border-radius:20px;white-space:nowrap;
+}
+.st-active{color:var(--grn);background:rgba(0,214,143,.1);border:1px solid rgba(0,214,143,.2)}
+.st-open{color:var(--blu);background:rgba(79,156,249,.1);border:1px solid rgba(79,156,249,.2)}
+.st-new{color:var(--org);background:rgba(255,123,44,.1);border:1px solid rgba(255,123,44,.2)}
+.h-opp-body{padding:14px 16px}
+.h-opp-name{font-size:12px;font-weight:500;color:var(--txt);margin-bottom:4px;letter-spacing:.02em}
+.h-opp-company{font-size:9px;color:var(--mut);margin-bottom:10px;letter-spacing:.04em}
+.h-opp-meta{display:flex;flex-wrap:wrap;gap:6px}
+.h-opp-tag{
+  font-size:8px;color:var(--dim);letter-spacing:.06em;
+  background:var(--surf2);border:1px solid var(--brd2);
+  padding:2px 8px;border-radius:2px;
+}
+.h-opp-foot{
+  padding:9px 16px;border-top:1px solid var(--brd2);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.h-opp-area{font-size:9px;color:var(--mut)}
+.h-opp-arr{font-size:12px;color:var(--dim);transition:.15s}
+.h-opp:hover .h-opp-arr{color:var(--gold);transform:translateX(3px)}
+
+/* ── mineral commodity strip ── */
+.h-commodities{
+  display:grid;grid-template-columns:repeat(6,1fr);gap:10px;
+  padding-bottom:48px;
+}
+.h-com{
+  background:var(--surf);border:1px solid var(--brd);
+  border-radius:4px;padding:16px 14px;
+  text-align:center;cursor:pointer;transition:.18s;
+}
+.h-com:hover{border-color:rgba(201,168,76,.35);background:var(--surf2)}
+.h-com-sym{
+  font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;
+  color:var(--gold2);line-height:1;margin-bottom:6px;
+}
+.h-com-name{font-size:8px;color:var(--txt);letter-spacing:.08em;margin-bottom:4px}
+.h-com-val{font-size:9px;color:var(--grn);letter-spacing:.04em}
+.h-com-chg{font-size:8px;letter-spacing:.04em;margin-top:1px}
+.chg-up{color:var(--grn)}.chg-dn{color:var(--red)}
+
+/* ── why invest strip ── */
+.h-why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding-bottom:48px}
+.h-why{
+  background:var(--surf);border:1px solid var(--brd);
+  border-radius:4px;padding:20px;
+}
+.h-why-icon{font-size:20px;color:var(--gold);margin-bottom:12px}
+.h-why-title{font-size:11px;font-weight:500;color:var(--txt);margin-bottom:6px;letter-spacing:.03em}
+.h-why-body{font-size:9px;color:var(--mut);line-height:1.8;letter-spacing:.03em}
+
+/* ── news row ── */
+.h-news-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding-bottom:56px}
+.h-news{
+  border-top:2px solid var(--brd);padding-top:14px;cursor:pointer;
+  transition:border-color .15s;
+}
+.h-news:hover{border-top-color:var(--gold)}
+.h-news-cat{font-size:7px;color:var(--blu);letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+.h-news-title{font-size:11px;color:var(--txt);line-height:1.5;margin-bottom:8px;letter-spacing:.02em}
+.h-news-meta{font-size:8px;color:var(--dim);letter-spacing:.06em}
+
+/* ── partners strip ── */
+#h-partners{
+  border-top:1px solid var(--brd);padding:32px 0;
+  background:var(--surf);margin-bottom:0;
+}
+.h-partners-inner{
+  display:flex;align-items:center;gap:40px;
+  overflow:hidden;
+}
+.h-partners-lbl{font-size:8px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+.h-partner{
+  font-size:10px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;
+  white-space:nowrap;transition:.15s;cursor:default;
+}
+.h-partner:hover{color:var(--mut)}
+
+/* ── footer ── */
+#h-footer{
+  background:var(--surf2);border-top:1px solid var(--brd);
+  padding:40px 40px 24px;
+}
+.h-footer-grid{
+  display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;
+  max-width:1200px;margin:0 auto 32px;
+}
+.h-footer-brand .logo-t{font-size:14px}
+.h-footer-desc{font-size:9px;color:var(--dim);line-height:1.8;margin-top:10px;letter-spacing:.03em;max-width:260px}
+.h-footer-col-title{font-size:8px;color:var(--mut);letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px}
+.h-footer-link{
+  display:block;font-size:9px;color:var(--dim);letter-spacing:.04em;
+  background:none;border:none;text-align:left;cursor:pointer;
+  padding:0;margin-bottom:7px;transition:.15s;width:100%;
+}
+.h-footer-link:hover{color:var(--gold)}
+.h-footer-bottom{
+  border-top:1px solid var(--brd2);padding-top:16px;
+  display:flex;align-items:center;justify-content:space-between;
+  max-width:1200px;margin:0 auto;
+}
+.h-footer-copy{font-size:8px;color:var(--dim);letter-spacing:.06em}
+.h-footer-badges{display:flex;gap:8px}
+.h-footer-badge{
+  font-size:7px;color:var(--dim);letter-spacing:.08em;
+  border:1px solid var(--brd2);padding:3px 9px;border-radius:20px;
+}
+
+/* home page scroll bar */
+#home::-webkit-scrollbar{width:4px}
+#home::-webkit-scrollbar-track{background:var(--bg)}
+#home::-webkit-scrollbar-thumb{background:var(--brd);border-radius:2px}
+
+/* ── Phase 1 sub-pages ── */
+.pg-hero{
+  position:relative;padding:56px 40px 40px;
+  border-bottom:1px solid var(--brd);
+  background:radial-gradient(ellipse 70% 50% at 70% 30%,rgba(201,168,76,.06) 0%,transparent 65%),
+             radial-gradient(ellipse 40% 40% at 20% 80%,rgba(79,156,249,.04) 0%,transparent 60%);
+}
+.pg-hero .h-section{padding:0}
+.pg-toolbar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-bottom:20px;padding-top:8px;
+}
+.pg-search{
+  flex:1;min-width:200px;max-width:360px;position:relative;
+}
+.pg-search input{
+  width:100%;background:#0a0e18;border:1px solid var(--brd2);color:var(--txt);
+  font-size:10px;padding:8px 28px 8px 28px;border-radius:3px;outline:none;
+}
+.pg-search input:focus{border-color:var(--gold)}
+.pg-si{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:12px;pointer-events:none}
+.pg-fsel{
+  background:var(--surf);border:1px solid var(--brd2);color:var(--mut);
+  font-size:9px;padding:7px 10px;border-radius:3px;outline:none;cursor:pointer;
+}
+.pg-fsel:focus{border-color:var(--gold);color:var(--txt)}
+.pg-btn{
+  background:transparent;border:1px solid var(--brd2);color:var(--mut);
+  font-size:9px;padding:7px 14px;border-radius:3px;cursor:pointer;
+  letter-spacing:.08em;text-transform:uppercase;transition:.15s;
+}
+.pg-btn:hover{border-color:var(--gold);color:var(--gold2)}
+.pg-btn-primary{
+  background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.4);color:var(--gold2);
+}
+.pg-btn-primary:hover{background:rgba(201,168,76,.22)}
+.pg-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}
+.pg-stat{background:var(--surf);border:1px solid var(--brd);border-radius:4px;padding:14px 16px}
+.pg-stat-n{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--gold2);line-height:1}
+.pg-stat-l{font-size:8px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-top:4px}
+.pg-table-wrap{background:var(--surf);border:1px solid var(--brd);border-radius:4px;overflow:hidden;margin-bottom:48px}
+.pg-table{width:100%;border-collapse:collapse;font-size:9px}
+.pg-table th{
+  text-align:left;padding:10px 12px;background:var(--surf2);color:var(--dim);
+  font-size:7px;letter-spacing:.12em;text-transform:uppercase;border-bottom:1px solid var(--brd);
+  cursor:pointer;user-select:none;white-space:nowrap;
+}
+.pg-table th:hover{color:var(--gold)}
+.pg-table td{padding:10px 12px;border-bottom:1px solid var(--brd2);color:var(--mut);vertical-align:middle}
+.pg-table tr:last-child td{border-bottom:none}
+.pg-table tr:hover td{background:rgba(255,255,255,.02);color:var(--txt)}
+.pg-table tr.sel td{background:rgba(79,156,249,.08)}
+.pg-table .td-name{color:var(--txt);font-weight:500;font-size:10px}
+.pg-table .td-act{display:flex;gap:6px;flex-wrap:nowrap}
+.pg-td-btn{
+  background:none;border:1px solid var(--brd2);color:var(--mut);
+  font-size:8px;padding:3px 8px;border-radius:2px;cursor:pointer;white-space:nowrap;
+}
+.pg-td-btn:hover{border-color:var(--accent);color:var(--gold2)}
+.pg-inv-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding-bottom:48px}
+.pg-card{background:var(--surf);border:1px solid var(--brd);border-radius:4px;padding:18px}
+.pg-card-t{font-size:11px;font-weight:500;color:var(--txt);margin-bottom:8px}
+.pg-card-d{font-size:9px;color:var(--mut);line-height:1.75;margin-bottom:12px}
+.pg-tier{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.pg-tier-item{
+  flex:1;min-width:140px;padding:12px;border:1px solid var(--brd2);border-radius:4px;
+  background:var(--surf2);cursor:default;
+}
+.pg-tier-item.on{border-color:rgba(201,168,76,.45);background:rgba(201,168,76,.06)}
+.pg-tier-n{font-size:9px;color:var(--gold2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.pg-tier-d{font-size:8px;color:var(--dim);line-height:1.6}
+.pg-watch{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
+.pg-watch-item{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:8px 10px;background:var(--surf2);border:1px solid var(--brd2);border-radius:3px;
+  font-size:9px;color:var(--txt);cursor:pointer;transition:.12s;
+}
+.pg-watch-item:hover{border-color:var(--brd)}
+.pg-watch-empty{font-size:9px;color:var(--dim);padding:12px 0;text-align:center}
+.pg-opp-filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.pg-chip{
+  font-size:8px;letter-spacing:.06em;text-transform:uppercase;
+  padding:4px 10px;border-radius:20px;border:1px solid var(--brd2);
+  color:var(--mut);background:transparent;cursor:pointer;transition:.15s;
+}
+.pg-chip.on{color:var(--bg);background:var(--gold2);border-color:var(--gold2)}
+.pg-detail-bg{
+  position:fixed;inset:0;z-index:2500;background:rgba(4,8,14,.75);
+  display:none;align-items:center;justify-content:center;padding:24px;
+  backdrop-filter:blur(6px);
+}
+.pg-detail-bg.v{display:flex}
+.pg-detail{
+  background:var(--surf);border:1px solid var(--brd);border-radius:6px;
+  max-width:520px;width:100%;max-height:85vh;overflow-y:auto;padding:22px 24px;
+  position:relative;
+}
+.pg-detail-x{
+  position:absolute;top:12px;right:14px;background:none;border:none;
+  color:var(--dim);font-size:18px;cursor:pointer;line-height:1;
+}
+.pg-detail-x:hover{color:var(--txt)}
+.pg-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin:14px 0}
+.pg-dk{font-size:7px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase}
+.pg-dv{font-size:10px;color:var(--txt);margin-bottom:8px}
+.pg-detail-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--brd2)}
+@media(max-width:900px){
+  .pg-stats{grid-template-columns:repeat(2,1fr)}
+  .pg-inv-grid,.h-opps-grid{grid-template-columns:1fr}
+  .h-stats-grid{grid-template-columns:repeat(3,1fr)}
+}
+
 /* splash panels (about / contact / login) */
 .sp-panel{
   position:absolute;inset:0;z-index:20;
@@ -671,6 +1380,518 @@ input,select{font-family:inherit}
 </div>
 
 
+<!-- ═══ GAMMA-STYLE APP (scroll + cards) ════════════ -->
+<div id="home">
+
+  <nav id="gamma-nav">
+    <div class="gamma-nav-in">
+      <div class="gamma-logo" onclick="showHomePage('overview')" title="Top">
+        <svg viewBox="0 0 28 28" width="24" height="24" fill="none"><polygon points="14,2 25,8 25,20 14,26 3,20 3,8" fill="rgba(201,168,76,.12)" stroke="#c9a84c" stroke-width="1.2"/><circle cx="14" cy="14" r="3.5" fill="#c9a84c"/></svg>
+        <div><div class="gamma-logo-t">Tunisian Mining Hub</div><div class="gamma-logo-s">Investor platform</div></div>
+      </div>
+      <div class="gamma-pills" id="gamma-pills">
+        <button class="gamma-pill active" data-page="overview" onclick="showHomePage('overview')">Overview</button>
+        <button class="gamma-pill" data-page="investor" onclick="showHomePage('investor')">Investor</button>
+        <button class="gamma-pill" data-page="titles" onclick="showHomePage('titles')">Titles</button>
+        <button class="gamma-pill" data-page="opportunities" onclick="showHomePage('opportunities')">Opportunities</button>
+        <button class="gamma-pill" data-page="brief" onclick="showHomePage('brief')">Sector brief</button>
+        <button class="gamma-pill map-pill" onclick="enterPlatform()">Map</button>
+      </div>
+      <div class="gamma-nav-actions">
+        <span class="live-pill">Live</span>
+        <span class="dash-user">Guest</span>
+        <button class="gv-btn gv-btn-primary" onclick="enterPlatform()">Open map</button>
+      </div>
+    </div>
+  </nav>
+
+  <div id="gamma-wrap">
+    <main id="gamma-canvas">
+
+  <section id="sec-overview" class="gamma-sec">
+    <div class="gamma-inner">
+      <div class="gv-card gv-hero">
+        <div class="gamma-sec-label">Tunisia · ONM Registry</div>
+        <div class="gv-hero-t">Mining intelligence,<br/>one <em>workspace</em></div>
+        <div class="gv-hero-d">Scroll through cards like a Gamma site — overview, investor tools, full title registry, and opportunities. Open the map anytime for spatial analysis.</div>
+        <div class="gv-hero-actions">
+          <button class="gv-btn gv-btn-primary" onclick="enterPlatform()">Interactive map</button>
+          <button class="gv-btn" onclick="showHomePage('titles')">Browse titles</button>
+          <button class="gv-btn" onclick="downloadSectorBrief()">Download brief</button>
+        </div>
+      </div>
+      <div class="gv-card gv-card-sm">
+        <div class="dash-kpis" id="dash-kpis"></div>
+      </div>
+      <div class="gv-bento">
+        <div class="dash-widget dash-widget-wide">
+          <div class="dash-w-t">Your watchlist <button class="dash-w-more" onclick="showHomePage('investor')">Manage →</button></div>
+          <div class="dash-list" id="dash-watch-widget"></div>
+        </div>
+        <div class="dash-widget">
+          <div class="dash-w-t">Top opportunities <button class="dash-w-more" onclick="showHomePage('opportunities')">View all →</button></div>
+          <div class="dash-list" id="dash-opp-widget"></div>
+        </div>
+        <div class="dash-widget">
+          <div class="dash-w-t">Expiring within 12 months</div>
+          <div class="dash-list" id="dash-exp-widget"></div>
+        </div>
+        <div class="dash-widget">
+          <div class="dash-w-t">Quick actions</div>
+          <div class="dash-actions">
+            <button class="gv-btn gv-btn-primary" onclick="enterPlatform()">Open map</button>
+            <button class="gv-btn" onclick="showHomePage('titles')">Titles</button>
+            <button class="gv-btn" onclick="openSplashFromHome()">Request access</button>
+          </div>
+        </div>
+      </div>
+      <div class="gv-card gv-card-sm">
+        <div class="dash-w-t">Commodity mix (active permits)</div>
+        <div id="dash-comm-bars"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sec-brief" class="gamma-sec">
+    <div class="gamma-inner" id="pg-home">
+
+  <!-- ── HERO ── -->
+  <div id="h-hero">
+    <div id="h-hero-bg"></div>
+    <!-- animated grid lines -->
+    <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:.04;pointer-events:none" preserveAspectRatio="xMidYMid slice">
+      <defs><pattern id="hgrid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0L0 0 0 60" fill="none" stroke="#4f9cf9" stroke-width=".5"/></pattern></defs>
+      <rect width="100%" height="100%" fill="url(#hgrid)"/>
+    </svg>
+    <div class="h-hero-grid h-section">
+      <div>
+        <div class="h-eyebrow">Private Investor Intelligence · Tunisia · Est. 2024</div>
+        <h1 class="h-title">The Gateway to<br/>Tunisian <em>Mining</em><br/>Investment</h1>
+        <p class="h-desc">A single platform uniting investors, mining title holders, companies, and service providers across Tunisia's $2B+ mineral resource landscape. Real-time permit data, interactive maps, and curated investment intelligence.</p>
+        <div class="h-cta-row">
+          <button class="h-cta-primary" onclick="enterPlatform()">Explore the Map →</button>
+          <button class="h-cta-secondary" onclick="downloadSectorBrief()">Download Sector Brief</button>
+        </div>
+        <div class="h-trust">
+          <div class="h-trust-item"><span class="h-trust-dot"></span>Live ONM Data</div>
+          <div class="h-trust-item">·</div>
+          <div class="h-trust-item">17+ Active Permits</div>
+          <div class="h-trust-item">·</div>
+          <div class="h-trust-item">9 Regions Covered</div>
+        </div>
+      </div>
+      <!-- map preview card -->
+      <div class="h-map-card">
+        <div class="h-map-card-top">
+          <div class="h-map-mock">
+            <!-- Tunisia map mock dots & lines -->
+            <div class="h-map-badge">Interactive Permit Map</div>
+            <div class="h-map-live">Live</div>
+            <!-- permit dots -->
+            <div class="h-map-dot" style="left:42%;top:28%;width:10px;height:10px;background:#00d68f;opacity:.9;box-shadow:0 0 10px rgba(0,214,143,.5)"></div>
+            <div class="h-map-dot" style="left:35%;top:44%;width:8px;height:8px;background:#ffc847;opacity:.85;box-shadow:0 0 8px rgba(255,200,71,.4);animation-delay:.4s"></div>
+            <div class="h-map-dot" style="left:58%;top:36%;width:12px;height:12px;background:#4f9cf9;opacity:.8;box-shadow:0 0 12px rgba(79,156,249,.4);animation-delay:.8s"></div>
+            <div class="h-map-dot" style="left:28%;top:62%;width:7px;height:7px;background:#ffc847;opacity:.75;animation-delay:1.2s"></div>
+            <div class="h-map-dot" style="left:65%;top:55%;width:9px;height:9px;background:#00d68f;opacity:.8;animation-delay:.6s"></div>
+            <div class="h-map-dot" style="left:50%;top:68%;width:6px;height:6px;background:#ff7b2c;opacity:.85;animation-delay:1.8s"></div>
+            <div class="h-map-dot" style="left:75%;top:42%;width:7px;height:7px;background:#4f9cf9;opacity:.7;animation-delay:1s"></div>
+            <!-- Tunisia outline hint -->
+            <svg style="position:absolute;inset:0;width:100%;height:100%;opacity:.15" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">
+              <path d="M95 20 L110 18 L118 24 L120 32 L115 42 L118 55 L112 68 L108 80 L112 95 L108 110 L100 125 L92 138 L85 148 L78 155 L72 162 L70 170 L78 175 L82 168 L90 165 L95 160 L100 165 L98 175 L90 178 L85 185 L88 188 L95 182 L100 178 L106 180 L110 188 L115 190 L120 182 L122 170 L118 158 L120 148 L128 138 L132 125 L130 112 L128 100 L132 88 L130 75 L125 62 L122 50 L125 40 L122 28 L115 20 Z" fill="none" stroke="#4f9cf9" stroke-width="1.5"/>
+            </svg>
+          </div>
+        </div>
+        <div class="h-map-stats">
+          <div class="h-map-stat"><div class="h-map-stat-n">17+</div><div class="h-map-stat-l">Titles</div></div>
+          <div class="h-map-stat"><div class="h-map-stat-n">9</div><div class="h-map-stat-l">Regions</div></div>
+          <div class="h-map-stat"><div class="h-map-stat-n">1,100</div><div class="h-map-stat-l">km²</div></div>
+          <div class="h-map-stat"><div class="h-map-stat-n">$2B+</div><div class="h-map-stat-l">Resources</div></div>
+        </div>
+        <button class="h-map-open" onclick="enterPlatform()">Open Interactive Map →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTOR STATS BAR ── -->
+  <div id="h-stats">
+    <div class="h-stats-grid h-section">
+      <div class="h-stat">
+        <div class="h-stat-n">$2.1B</div>
+        <div class="h-stat-l">Estimated Resources</div>
+        <div class="h-stat-sub">↑ 8.4% YoY</div>
+      </div>
+      <div class="h-stat">
+        <div class="h-stat-n">17</div>
+        <div class="h-stat-l">Active Permits</div>
+        <div class="h-stat-sub">+3 this year</div>
+      </div>
+      <div class="h-stat">
+        <div class="h-stat-n">9</div>
+        <div class="h-stat-l">Mining Regions</div>
+        <div class="h-stat-sub">Full national coverage</div>
+      </div>
+      <div class="h-stat">
+        <div class="h-stat-n">42%</div>
+        <div class="h-stat-l">Phosphate Share</div>
+        <div class="h-stat-sub">of mineral portfolio</div>
+      </div>
+      <div class="h-stat">
+        <div class="h-stat-n">1,100</div>
+        <div class="h-stat-l">km² Opportunity</div>
+        <div class="h-stat-sub">Open exploration zones</div>
+      </div>
+      <div class="h-stat">
+        <div class="h-stat-n">ONM</div>
+        <div class="h-stat-l">Official Data Source</div>
+        <div class="h-stat-sub">Updated quarterly</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FEATURED OPPORTUNITIES ── -->
+  <div class="h-section">
+    <div class="h-sec-head">
+      <div>
+        <div class="h-sec-tag">Featured Opportunities</div>
+        <div class="h-sec-title">Open for <em>Investment</em></div>
+      </div>
+      <button class="h-sec-more" onclick="showHomePage('opportunities')">View all opportunities →</button>
+    </div>
+    <div class="h-opps-grid">
+      <div class="h-opp" onclick="openTitleDetail('MT-001')">
+        <div class="h-opp-head">
+          <span class="h-opp-mineral">Phosphate</span>
+          <span class="h-opp-status st-active">Active</span>
+        </div>
+        <div class="h-opp-body">
+          <div class="h-opp-name">Gafsa Central Phosphate Block</div>
+          <div class="h-opp-company">CPG — Compagnie des Phosphates de Gafsa</div>
+          <div class="h-opp-meta">
+            <span class="h-opp-tag">Exploration</span>
+            <span class="h-opp-tag">Gafsa Governorate</span>
+            <span class="h-opp-tag">Permit #TN-PHO-001</span>
+          </div>
+        </div>
+        <div class="h-opp-foot">
+          <span class="h-opp-area">320 km² · Est. $800M</span>
+          <span class="h-opp-arr">→</span>
+        </div>
+      </div>
+      <div class="h-opp" onclick="openTitleDetail('MT-005')">
+        <div class="h-opp-head">
+          <span class="h-opp-mineral">Zinc–Lead</span>
+          <span class="h-opp-status st-open">Open Call</span>
+        </div>
+        <div class="h-opp-body">
+          <div class="h-opp-name">Jendouba Polymetallic Zone</div>
+          <div class="h-opp-company">BRGM Tunisia — Joint Venture Opportunity</div>
+          <div class="h-opp-meta">
+            <span class="h-opp-tag">Extraction</span>
+            <span class="h-opp-tag">Jendouba</span>
+            <span class="h-opp-tag">Permit #TN-ZNC-002</span>
+          </div>
+        </div>
+        <div class="h-opp-foot">
+          <span class="h-opp-area">185 km² · Est. $340M</span>
+          <span class="h-opp-arr">→</span>
+        </div>
+      </div>
+      <div class="h-opp" onclick="openTitleDetail('MT-010')">
+        <div class="h-opp-head">
+          <span class="h-opp-mineral">Iron Ore</span>
+          <span class="h-opp-status st-new">New</span>
+        </div>
+        <div class="h-opp-body">
+          <div class="h-opp-name">Nefza–Sejnane Iron Corridor</div>
+          <div class="h-opp-company">STUSID Bank Concession Zone</div>
+          <div class="h-opp-meta">
+            <span class="h-opp-tag">Processing</span>
+            <span class="h-opp-tag">Béja Governorate</span>
+            <span class="h-opp-tag">Permit #TN-IRN-004</span>
+          </div>
+        </div>
+        <div class="h-opp-foot">
+          <span class="h-opp-area">240 km² · Est. $520M</span>
+          <span class="h-opp-arr">→</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── COMMODITIES STRIP ── -->
+  <div class="h-section">
+    <div class="h-sec-head">
+      <div>
+        <div class="h-sec-tag">Mineral Portfolio</div>
+        <div class="h-sec-title">Tunisia's Key <em>Commodities</em></div>
+      </div>
+      <button class="h-sec-more" onclick="toast('Live commodity prices — Phase 2','ok')">Live prices →</button>
+    </div>
+    <div class="h-commodities">
+      <div class="h-com"><div class="h-com-sym">P</div><div class="h-com-name">Phosphate</div><div class="h-com-val">$92/t</div><div class="h-com-chg chg-up">↑ 2.1%</div></div>
+      <div class="h-com"><div class="h-com-sym">Zn</div><div class="h-com-name">Zinc</div><div class="h-com-val">$2,840/t</div><div class="h-com-chg chg-dn">↓ 0.8%</div></div>
+      <div class="h-com"><div class="h-com-sym">Pb</div><div class="h-com-name">Lead</div><div class="h-com-val">$2,120/t</div><div class="h-com-chg chg-up">↑ 1.4%</div></div>
+      <div class="h-com"><div class="h-com-sym">Fe</div><div class="h-com-name">Iron Ore</div><div class="h-com-val">$118/t</div><div class="h-com-chg chg-up">↑ 0.6%</div></div>
+      <div class="h-com"><div class="h-com-sym">Ba</div><div class="h-com-name">Baryte</div><div class="h-com-val">$148/t</div><div class="h-com-chg chg-dn">↓ 0.3%</div></div>
+      <div class="h-com"><div class="h-com-sym">Au</div><div class="h-com-name">Gold</div><div class="h-com-val">$2,340/oz</div><div class="h-com-chg chg-up">↑ 0.9%</div></div>
+    </div>
+  </div>
+
+  <!-- ── WHY INVEST IN TUNISIA ── -->
+  <div class="h-section">
+    <div class="h-sec-head">
+      <div>
+        <div class="h-sec-tag">Investment Case</div>
+        <div class="h-sec-title">Why Invest in <em>Tunisia</em></div>
+      </div>
+    </div>
+    <div class="h-why-grid">
+      <div class="h-why">
+        <div class="h-why-icon">◈</div>
+        <div class="h-why-title">World's 5th Largest Phosphate Reserves</div>
+        <div class="h-why-body">Tunisia holds proven phosphate reserves exceeding 1 billion tonnes, with major deposits concentrated in the Gafsa basin. Production capacity is expanding with new concessions actively tendered by CPG.</div>
+      </div>
+      <div class="h-why">
+        <div class="h-why-icon">◇</div>
+        <div class="h-why-title">Strategic Mediterranean Location</div>
+        <div class="h-why-body">Positioned at the crossroads of Africa and Europe, with deep-water port infrastructure at Sfax and La Goulette. Rail and road networks connect mining zones directly to export terminals.</div>
+      </div>
+      <div class="h-why">
+        <div class="h-why-icon">◉</div>
+        <div class="h-why-title">Supportive Mining Code & Tax Incentives</div>
+        <div class="h-why-body">The 2003 Mining Code (revised 2020) provides transparent permitting, 10-year tax exemptions for new extraction projects, and royalty frameworks aligned with international standards.</div>
+      </div>
+      <div class="h-why">
+        <div class="h-why-icon">▣</div>
+        <div class="h-why-title">Established Mining Infrastructure</div>
+        <div class="h-why-body">Over 60 years of industrial mining history, with skilled local workforce, processing facilities at Sfax and M'dhilla, and active geological survey programmes under ONM.</div>
+      </div>
+      <div class="h-why">
+        <div class="h-why-icon">⊕</div>
+        <div class="h-why-title">Undiscovered Polymetallic Potential</div>
+        <div class="h-why-body">North Tunisia's Tell Atlas range hosts significant zinc, lead, and iron mineralisation. Less than 30% of known anomalies have been systematically explored, representing significant greenfield opportunity.</div>
+      </div>
+      <div class="h-why">
+        <div class="h-why-icon">◎</div>
+        <div class="h-why-title">Active International Partnerships</div>
+        <div class="h-why-body">Bilateral investment agreements with 50+ countries, active BRGM and World Bank technical assistance programmes, and growing interest from Gulf sovereign wealth funds in strategic minerals.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── NEWS ── -->
+  <div class="h-section">
+    <div class="h-sec-head">
+      <div>
+        <div class="h-sec-tag">Latest Intelligence</div>
+        <div class="h-sec-title">Mining <em>News</em> & Updates</div>
+      </div>
+      <button class="h-sec-more" onclick="toast('News section — Phase 2','ok')">All news →</button>
+    </div>
+    <div class="h-news-grid">
+      <div class="h-news" onclick="toast('Full article — News section Phase 2','ok')">
+        <div class="h-news-cat">Regulation</div>
+        <div class="h-news-title">ONM publishes new exploration permit catalogue for Q1 2025 — 6 new blocks open for tender in Gafsa and Kasserine</div>
+        <div class="h-news-meta">15 Jan 2025 · Office National des Mines</div>
+      </div>
+      <div class="h-news" onclick="toast('Full article — News section Phase 2','ok')">
+        <div class="h-news-cat">Investment</div>
+        <div class="h-news-title">Gulf consortium announces $120M commitment to Nefza iron corridor — JV with STUSID Bank signed in Tunis</div>
+        <div class="h-news-meta">8 Jan 2025 · Financial Times Africa</div>
+      </div>
+      <div class="h-news" onclick="toast('Full article — News section Phase 2','ok')">
+        <div class="h-news-cat">Market</div>
+        <div class="h-news-title">Phosphate exports up 14% in 2024 as CPG restores Gafsa production following infrastructure upgrade</div>
+        <div class="h-news-meta">2 Jan 2025 · Reuters Commodities</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PARTNERS STRIP ── -->
+  <div id="h-partners">
+    <div class="h-partners-inner h-section">
+      <span class="h-partners-lbl">Data Partners &amp; Sources</span>
+      <span class="h-partner">Office National des Mines (ONM)</span>
+      <span class="h-partner">·</span>
+      <span class="h-partner">Ministère de l'Industrie</span>
+      <span class="h-partner">·</span>
+      <span class="h-partner">CPG Gafsa</span>
+      <span class="h-partner">·</span>
+      <span class="h-partner">BRGM Tunisia</span>
+      <span class="h-partner">·</span>
+      <span class="h-partner">World Bank IFC</span>
+      <span class="h-partner">·</span>
+      <span class="h-partner">STUSID Bank</span>
+    </div>
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <footer id="h-footer">
+    <div class="h-footer-grid">
+      <div class="h-footer-brand">
+        <div class="logo-t">Tunisian Mining Hub</div>
+        <div class="h-footer-desc">The leading digital intelligence platform for the Tunisian mining sector, connecting investors, title holders, companies, and service providers across the full mining value chain.</div>
+      </div>
+      <div>
+        <div class="h-footer-col-title">Platform</div>
+        <button class="h-footer-link" onclick="enterPlatform()">Interactive Map</button>
+        <button class="h-footer-link" onclick="showHomePage('overview')">Overview</button>
+        <button class="h-footer-link" onclick="showHomePage('titles')">Mining Titles</button>
+        <button class="h-footer-link" onclick="showHomePage('investor')">Investor Space</button>
+        <button class="h-footer-link" onclick="showHomePage('opportunities')">Opportunities</button>
+        <button class="h-footer-link" onclick="toast('Companies — coming in Phase 2','ok')">Companies</button>
+      </div>
+      <div>
+        <div class="h-footer-col-title">Resources</div>
+        <button class="h-footer-link">Mining Code</button>
+        <button class="h-footer-link">Permit Guide</button>
+        <button class="h-footer-link">Sector Reports</button>
+        <button class="h-footer-link">News & Updates</button>
+        <button class="h-footer-link">API Access</button>
+      </div>
+      <div>
+        <div class="h-footer-col-title">Company</div>
+        <button class="h-footer-link">About Us</button>
+        <button class="h-footer-link">Contact</button>
+        <button class="h-footer-link">Privacy Policy</button>
+        <button class="h-footer-link">Terms of Use</button>
+        <button class="h-footer-link">Data Sources</button>
+      </div>
+    </div>
+    <div class="h-footer-bottom">
+      <div class="h-footer-copy">© 2024 MineMap Intelligence · Tunisia · Data: ONM · v2024.2</div>
+      <div class="h-footer-badges">
+        <span class="h-footer-badge">ISO 19115 Compliant</span>
+        <span class="h-footer-badge">ONM Licensed Data</span>
+        <span class="h-footer-badge">GDPR Compliant</span>
+      </div>
+    </div>
+  </footer>
+
+    </div>
+  </section>
+
+  <section id="sec-investor" class="gamma-sec">
+    <div class="gamma-inner">
+      <div class="gamma-sec-label">Investor space</div>
+      <div class="gv-card gv-card-sm" style="margin-bottom:14px">
+        <div class="dash-hdr-t">Watchlists & <em>access</em></div>
+        <div class="dash-hdr-d">Tools for private investors — save titles, export data, and request verified access.</div>
+      </div>
+      <div class="pg-stats" id="inv-stats"></div>
+      <div class="pg-inv-grid">
+        <div class="pg-card">
+          <div class="pg-card-t">Access tiers</div>
+          <div class="pg-card-d">Platform features scale with investor verification. Contact info@minemap.tn to upgrade from guest preview.</div>
+          <div class="pg-tier">
+            <div class="pg-tier-item on"><div class="pg-tier-n">Guest</div><div class="pg-tier-d">Map browse · public stats · opportunity previews</div></div>
+            <div class="pg-tier-item"><div class="pg-tier-n">Registered</div><div class="pg-tier-d">Watchlists · CSV export · title comparison</div></div>
+            <div class="pg-tier-item"><div class="pg-tier-n">Premium</div><div class="pg-tier-d">Full dossiers · ONM alerts · API access</div></div>
+          </div>
+          <button class="pg-btn pg-btn-primary" onclick="openSplashFromHome()">Request investor login →</button>
+        </div>
+        <div class="pg-card">
+          <div class="pg-card-t">Watchlist <span style="color:var(--dim);font-weight:400">(<span id="watch-cnt">0</span>)</span></div>
+          <div class="pg-card-d">Titles you save appear here and sync in this browser.</div>
+          <div class="pg-watch" id="watch-list"></div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="pg-btn" onclick="showHomePage('titles')">Browse titles</button>
+            <button class="pg-btn" onclick="showHomePage('overview')">← Overview</button>
+            <button class="pg-btn" onclick="clearWatchlist()">Clear all</button>
+          </div>
+        </div>
+        <div class="pg-card">
+          <div class="pg-card-t">Sector intelligence</div>
+          <div class="pg-card-d">Download a summary brief generated from the live ONM registry snapshot in this platform.</div>
+          <button class="pg-btn pg-btn-primary" onclick="downloadSectorBrief()">Download sector brief (.txt)</button>
+          <button class="pg-btn" style="margin-left:8px" onclick="enterPlatform()">Open interactive map</button>
+        </div>
+        <div class="pg-card">
+          <div class="pg-card-t">Quick map views</div>
+          <div class="pg-card-d">Jump to the map with filters pre-applied for common investor workflows.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <button class="pg-btn" onclick="openMapPreset({status:'Active'})">All active permits</button>
+            <button class="pg-btn" onclick="openMapPreset({commodity:'Phosphate'})">Phosphate belt</button>
+            <button class="pg-btn" onclick="openMapPreset({commodity:'Lead & Zinc'})">Zn–Pb districts</button>
+            <button class="pg-btn" onclick="openMapPreset({type:'Exploration Permit'})">Exploration permits</button>
+            <button class="pg-btn" onclick="openMapPreset({status:'Expired'})">Expired / review</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sec-titles" class="gamma-sec">
+    <div class="gamma-inner">
+      <div class="gamma-sec-label">Mining titles</div>
+      <div class="gv-card gv-card-sm" style="margin-bottom:14px">
+        <div class="dash-hdr-t">Full <em>registry</em></div>
+        <div class="dash-hdr-d">Search, sort, export CSV, and jump to any permit on the map.</div>
+      </div>
+      <div class="gv-card">
+      <div class="pg-toolbar">
+        <div class="pg-search"><span class="pg-si">⌕</span><input type="text" id="titles-q" placeholder="Search name, ID, company, governorate…" oninput="renderTitlesPage()"/></div>
+        <select class="pg-fsel" id="titles-f-comm" onchange="renderTitlesPage()"><option value="">All commodities</option></select>
+        <select class="pg-fsel" id="titles-f-stat" onchange="renderTitlesPage()"><option value="">All statuses</option><option>Active</option><option>Expired</option></select>
+        <select class="pg-fsel" id="titles-f-gov" onchange="renderTitlesPage()"><option value="">All regions</option></select>
+        <button class="pg-btn pg-btn-primary" onclick="enterPlatform()">Open map</button>
+        <button class="pg-btn" onclick="exportTitlesCSV()">Export CSV</button>
+      </div>
+      <div class="pg-stats" id="titles-stats"></div>
+      <div class="pg-table-wrap">
+        <table class="pg-table">
+          <thead>
+            <tr>
+              <th onclick="sortTitles('id')">ID</th>
+              <th onclick="sortTitles('name')">Title</th>
+              <th onclick="sortTitles('commodity')">Commodity</th>
+              <th onclick="sortTitles('type')">Type</th>
+              <th onclick="sortTitles('company')">Company</th>
+              <th onclick="sortTitles('governorate')">Region</th>
+              <th onclick="sortTitles('area_km2')">Area km²</th>
+              <th onclick="sortTitles('expires')">Expires</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="titles-tbody"></tbody>
+        </table>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sec-opportunities" class="gamma-sec">
+    <div class="gamma-inner">
+      <div class="gamma-sec-label">Opportunities</div>
+      <div class="gv-card gv-card-sm" style="margin-bottom:14px">
+        <div class="dash-hdr-t">Investment <em>pipeline</em></div>
+        <div class="dash-hdr-d">Active permits open for investor review across commodities and regions.</div>
+      </div>
+      <div class="gv-card">
+      <div class="pg-toolbar">
+        <div class="pg-search"><span class="pg-si">⌕</span><input type="text" id="opp-q" placeholder="Filter opportunities…" oninput="renderOpportunitiesPage()"/></div>
+        <div class="pg-opp-filters" id="opp-chips"></div>
+      </div>
+      <div class="pg-stats" id="opp-stats"></div>
+      <div class="h-opps-grid" id="opp-grid"></div>
+      </div>
+    </div>
+  </section>
+
+    </main>
+    <aside id="gamma-strip" aria-label="Section navigation"></aside>
+  </div>
+</div>
+<!-- END GAMMA APP -->
+
+<!-- Phase 1 detail modal -->
+<div class="pg-detail-bg" id="pg-detail" onclick="closeTitleDetail(event)">
+  <div class="pg-detail" onclick="event.stopPropagation()">
+    <button class="pg-detail-x" onclick="closeTitleDetail()">×</button>
+    <div id="pg-detail-body"></div>
+  </div>
+</div>
+
 <!-- ALERT BANNER -->
 <div id="alert-bann">
   <span class="ab-icon">⚠</span>
@@ -760,6 +1981,7 @@ input,select{font-family:inherit}
     <svg viewBox="0 0 12 12" fill="currentColor"><rect x="1" y="1" width="4" height="10" rx="1"/><rect x="7" y="1" width="4" height="10" rx="1"/></svg>Compare
   </button>
   <div class="tb-right">
+    <button class="tb-btn" onclick="goHome()" style="border-color:rgba(201,168,76,.25);color:var(--mut)">← Home</button>
     <span class="live-pill">Live</span>
     <span class="ver">v2024.2 · Tunisia</span>
   </div>
@@ -769,9 +1991,20 @@ input,select{font-family:inherit}
 <div id="app">
   <!-- SIDEBAR -->
   <div id="sb">
+
+    <!-- SIDEBAR HEADER -->
+    <div id="sb-header">
+      <div class="sb-title">Mining Titles</div>
+      <div class="sb-sub">Tunisia · ONM Registry · Q1 2025</div>
+      <div class="sb-res-row">
+        <div class="sb-res-pill"><span id="res-cnt">—</span> results</div>
+        <button class="sb-rst-all" id="sb-rst-all" onclick="rstAll()">↺ Clear filters</button>
+      </div>
+    </div>
+
     <!-- SEARCH -->
     <div class="sec">
-      <div class="slbl">Search <span id="res-cnt" style="color:var(--gold)"></span></div>
+      <div class="slbl">Search</div>
       <div class="srch">
         <span class="si">⌕</span>
         <input type="text" id="q" placeholder="Title, company, zone…" oninput="doFilter()"/>
@@ -794,41 +2027,91 @@ input,select{font-family:inherit}
         <button class="rst" onclick="rstAdv()">↺ reset advanced</button>
       </div>
     </div>
-    <!-- FILTERS -->
+
+    <!-- FILTERS: MINERAL TYPE -->
     <div class="sec">
-      <div class="slbl">Filters</div>
-      <div class="flt-col">
-        <select class="flt-sel" id="fType" onchange="doFilter()">
-          <option value="">All Types</option>
-          <option>Exploitation Concession</option>
-          <option>Exploration Permit</option>
-          <option>Research Authorization</option>
-          <option>Expired / Cancelled</option>
-        </select>
-        <select class="flt-sel" id="fComm" onchange="doFilter()">
-          <option value="">All Commodities</option>
-          <option>Phosphate</option><option>Iron</option><option>Lead &amp; Zinc</option>
-          <option>Limestone</option><option>Baryte</option><option>Silica Sand</option>
-          <option>Gypsum</option><option>Salt</option><option>Oil Shale</option>
-        </select>
-        <select class="flt-sel" id="fGov" onchange="doFilter()">
-          <option value="">All Governorates</option>
-          <option>Gafsa</option><option>Kasserine</option><option>Jendouba</option>
-          <option>Bizerte</option><option>Sfax</option><option>Gabes</option>
-          <option>Tataouine</option><option>Beja</option><option>Nabeul</option>
-        </select>
-        <select class="flt-sel" id="fStat" onchange="doFilter()">
-          <option value="">All Statuses</option>
-          <option>Active</option><option>Expired</option>
-        </select>
-        <button class="rst" onclick="rstAll()">↺ reset all filters</button>
+      <div class="slbl">Mineral <button class="rst" style="display:inline;margin:0;width:auto" onclick="rstChips('mineral')">↺</button></div>
+      <div class="flt-sub">Commodity</div>
+      <div class="flt-chips" id="chips-mineral">
+        <button class="flt-chip chip-phosphate" data-group="mineral" data-val="Phosphate" onclick="togChip(this)"><span class="chip-dot" style="background:#c9a84c"></span>Phosphate</button>
+        <button class="flt-chip chip-iron" data-group="mineral" data-val="Iron" onclick="togChip(this)"><span class="chip-dot" style="background:#e05a3a"></span>Iron</button>
+        <button class="flt-chip chip-zinc" data-group="mineral" data-val="Lead &amp; Zinc" onclick="togChip(this)"><span class="chip-dot" style="background:#4f9cf9"></span>Zn–Pb</button>
+        <button class="flt-chip chip-baryte" data-group="mineral" data-val="Baryte" onclick="togChip(this)"><span class="chip-dot" style="background:#00d68f"></span>Baryte</button>
+        <button class="flt-chip chip-limestone" data-group="mineral" data-val="Limestone" onclick="togChip(this)"><span class="chip-dot" style="background:#7a92b0"></span>Limestone</button>
+        <button class="flt-chip chip-silica" data-group="mineral" data-val="Silica Sand" onclick="togChip(this)"><span class="chip-dot" style="background:#a8b8cc"></span>Silica</button>
+        <button class="flt-chip chip-gypsum" data-group="mineral" data-val="Gypsum" onclick="togChip(this)"><span class="chip-dot" style="background:#9b7ed8"></span>Gypsum</button>
+        <button class="flt-chip chip-salt" data-group="mineral" data-val="Salt" onclick="togChip(this)"><span class="chip-dot" style="background:#c8d8e8"></span>Salt</button>
+        <button class="flt-chip chip-oilshale" data-group="mineral" data-val="Oil Shale" onclick="togChip(this)"><span class="chip-dot" style="background:#5c7a4a"></span>Oil Shale</button>
       </div>
+      <!-- hidden select kept for doFilter() compatibility -->
+      <select class="flt-sel" id="fComm" onchange="doFilter()">
+        <option value="">All Commodities</option>
+        <option>Phosphate</option><option>Iron</option><option>Lead &amp; Zinc</option>
+        <option>Limestone</option><option>Baryte</option><option>Silica Sand</option>
+        <option>Gypsum</option><option>Salt</option><option>Oil Shale</option>
+      </select>
+
+      <div class="flt-sub" style="margin-top:10px">Permit type</div>
+      <div class="flt-chips" id="chips-type">
+        <button class="flt-chip chip-concession" data-group="type" data-val="Exploitation Concession" onclick="togChip(this)">Concession</button>
+        <button class="flt-chip chip-permit" data-group="type" data-val="Exploration Permit" onclick="togChip(this)">Exploration</button>
+        <button class="flt-chip chip-research" data-group="type" data-val="Research Authorization" onclick="togChip(this)">Research</button>
+        <button class="flt-chip chip-expired" data-group="type" data-val="Expired / Cancelled" onclick="togChip(this)">Expired</button>
+      </div>
+      <select class="flt-sel" id="fType" onchange="doFilter()">
+        <option value="">All Types</option>
+        <option>Exploitation Concession</option>
+        <option>Exploration Permit</option>
+        <option>Research Authorization</option>
+        <option>Expired / Cancelled</option>
+      </select>
     </div>
+
+    <!-- FILTERS: STATUS -->
+    <div class="sec">
+      <div class="slbl">Status <button class="rst" style="display:inline;margin:0;width:auto" onclick="rstChips('status')">↺</button></div>
+      <div class="flt-chips" id="chips-status">
+        <button class="flt-chip chip-active" data-group="status" data-val="Active" onclick="togChip(this)">
+          <span class="chip-dot" style="background:#00d68f"></span>Active
+        </button>
+        <button class="flt-chip chip-exp-stat" data-group="status" data-val="Expired" onclick="togChip(this)">
+          <span class="chip-dot" style="background:#546e8a"></span>Expired
+        </button>
+      </div>
+      <select class="flt-sel" id="fStat" onchange="doFilter()">
+        <option value="">All Statuses</option>
+        <option>Active</option><option>Expired</option>
+      </select>
+    </div>
+
+    <!-- FILTERS: REGION -->
+    <div class="sec">
+      <div class="slbl">Region <button class="rst" style="display:inline;margin:0;width:auto" onclick="rstChips('region')">↺</button></div>
+      <div class="flt-chips" id="chips-region">
+        <button class="flt-chip chip-region" data-group="region" data-val="Gafsa" onclick="togChip(this)">Gafsa</button>
+        <button class="flt-chip chip-region" data-group="region" data-val="Kasserine" onclick="togChip(this)">Kasserine</button>
+        <button class="flt-chip chip-region" data-group="region" data-val="Jendouba" onclick="togChip(this)">Jendouba</button>
+        <button class="flt-chip chip-region" data-group="region" data-val="Bizerte" onclick="togChip(this)">Bizerte</button>
+        <button class="flt-chip chip-region" data-group="region" data-val="Sfax" onclick="togChip(this)">Sfax</button>
+        <button class="flt-chip chip-region" data-group="region" data-val="Gabes" onclick="togChip(this)">Gabès</button>
+        <button class="flt-chip chip-region" data-group="region" data-val="Tataouine" onclick="togChip(this)">Tataouine</button>
+        <button class="flt-chip chip-region" data-group="region" data-val="Beja" onclick="togChip(this)">Béja</button>
+        <button class="flt-chip chip-region" data-group="region" data-val="Nabeul" onclick="togChip(this)">Nabeul</button>
+      </div>
+      <select class="flt-sel" id="fGov" onchange="doFilter()">
+        <option value="">All Governorates</option>
+        <option>Gafsa</option><option>Kasserine</option><option>Jendouba</option>
+        <option>Bizerte</option><option>Sfax</option><option>Gabes</option>
+        <option>Tataouine</option><option>Beja</option><option>Nabeul</option>
+      </select>
+    </div>
+
     <!-- LEGEND -->
     <div class="sec">
-      <div class="slbl">Legend — click to toggle</div>
+      <div class="slbl">Legend <span style="color:var(--dim);font-size:7px;font-weight:400;text-transform:none;letter-spacing:0">— click to toggle</span></div>
       <div class="leg-grid" id="leg"></div>
     </div>
+
     <!-- TABS -->
     <div class="tabs">
       <button class="tab on" onclick="swTab('list',this)">List</button>
@@ -858,8 +2141,21 @@ input,select{font-family:inherit}
   <div id="map-w">
     <div id="map"></div>
 
+    <!-- Map header bar -->
+    <div id="map-hdr">
+      <span class="mhdr-title">Active filters</span>
+      <div class="mhdr-sep"></div>
+      <div class="mhdr-filters" id="mhdr-filters">
+        <span class="mhdr-none" id="mhdr-none">None — showing all permits</span>
+      </div>
+      <div class="mhdr-right">
+        <span class="mhdr-cnt" id="mhdr-cnt"></span>
+        <button class="mhdr-home" onclick="goHome()">← Home</button>
+      </div>
+    </div>
+
     <!-- Basemap switcher -->
-    <div class="ov ov-tl">
+    <div class="ov" style="top:46px;left:10px">
       <div class="bm-sw">
         <button class="bm-b" onclick="setBM('dark',this)">Dark</button>
         <button class="bm-b" onclick="setBM('topo',this)">Topo</button>
@@ -1292,6 +2588,7 @@ function selectTitle(id){
   document.getElementById('det').classList.add('open');
 }
 
+function daysl(exp){return Math.ceil((new Date(exp)-Date.now())/864e5);}
 function row(k,v){return`<div class="dp-rw"><span class="dp-k">${k}</span><span class="dp-v">${v}</span></div>`;}
 function closeDet(){document.getElementById('det').classList.remove('open');selId=null;document.querySelectorAll('.ri').forEach(e=>e.classList.remove('sel'));}
 function zoomSel(){const d=ALL.find(x=>x.id===selId);if(d)map.flyTo([d.lat,d.lng],12,{duration:1});}
@@ -1514,9 +2811,36 @@ document.addEventListener('click',e=>{
 // SPLASH SCREEN
 // ═══════════════════════════════════════════════════
 function enterApp(){
+  document.body.classList.remove('map-mode');
   const splash = document.getElementById('splash');
   splash.classList.add('out');
-  setTimeout(()=>{ splash.style.display='none'; }, 820);
+  setTimeout(()=>{
+    splash.style.display='none';
+    const home = document.getElementById('home');
+    home.classList.add('v');
+    showHomePage('overview');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>home.classList.add('in')));
+  }, 820);
+}
+
+function fixMapLayout(){
+  if(typeof map==='undefined'||!map) return;
+  requestAnimationFrame(()=>{
+    map.invalidateSize(true);
+    window.dispatchEvent(new Event('resize'));
+  });
+}
+
+function enterPlatform(){
+  document.body.classList.add('map-mode');
+  const home=document.getElementById('home');
+  if(home){
+    home.classList.remove('in','v');
+    home.style.display='none';
+  }
+  document.getElementById('alert-bann')?.classList.remove('v');
+  setTimeout(fixMapLayout,50);
+  setTimeout(fixMapLayout,320);
 }
 
 function openSplashPanel(name){
@@ -1536,7 +2860,572 @@ function handleLogin(){
   setTimeout(()=>toast('Access denied — contact info@minemap.tn to request access','')  , 1400);
 }
 
-function daysl(ds){return Math.floor((new Date(ds)-new Date())/864e5);}
+// ═══════════════════════════════════════════════════
+// CHIP FILTERS
+// ═══════════════════════════════════════════════════
+function togChip(btn){
+  const group = btn.dataset.group;
+  const val   = btn.dataset.val;
+  const isOn  = btn.classList.toggle('on');
+  // sync the hidden <select> for this group
+  const selMap = {mineral:'fComm', type:'fType', status:'fStat', region:'fGov'};
+  const sel = document.getElementById(selMap[group]);
+  if(sel){
+    if(isOn){
+      // find the matching <option> and select it (single-select: last chip wins)
+      for(let o of sel.options){ if(o.value===val||o.text===val){sel.value=o.value;break;} }
+    } else {
+      sel.value='';
+    }
+  }
+  doFilter();
+  updateMapHeader();
+}
+
+function rstChips(group){
+  const selMap = {mineral:'fComm', type:'fType', status:'fStat', region:'fGov'};
+  document.querySelectorAll(`[data-group="${group}"]`).forEach(c=>c.classList.remove('on'));
+  const sel = document.getElementById(selMap[group]);
+  if(sel) sel.value='';
+  doFilter();
+  updateMapHeader();
+}
+
+function updateMapHeader(){
+  const tags=[];
+  const selMap = [
+    {id:'fComm',label:'Mineral'},
+    {id:'fType',label:'Type'},
+    {id:'fStat',label:'Status'},
+    {id:'fGov',label:'Region'}
+  ];
+  selMap.forEach(({id,label})=>{
+    const sel=document.getElementById(id);
+    if(sel&&sel.value) tags.push({label, val:sel.options[sel.selectedIndex].text, id});
+  });
+  const q=document.getElementById('q');
+  if(q&&q.value.trim()) tags.push({label:'Search', val:q.value.trim(), id:'q'});
+
+  const container=document.getElementById('mhdr-filters');
+  const none=document.getElementById('mhdr-none');
+  const cnt=document.getElementById('mhdr-cnt');
+  const resPill=document.getElementById('res-cnt');
+  if(!container) return;
+
+  if(tags.length===0){
+    container.innerHTML='<span class="mhdr-none" id="mhdr-none">None — showing all permits</span>';
+  } else {
+    container.innerHTML = tags.map(t=>
+      `<span class="mhdr-tag">${t.label}: ${t.val}
+       <button class="mhdr-tag-rm" onclick="clearFilter('${t.id}')" title="Remove">×</button>
+       </span>`
+    ).join('');
+  }
+  // update result counts displayed in header
+  const n = document.getElementById('res-cnt');
+  if(cnt && n) cnt.textContent = n.textContent ? n.textContent + ' titles' : '';
+}
+
+function clearFilter(id){
+  if(id==='q'){ clearQ(); }
+  else {
+    const sel=document.getElementById(id);
+    if(sel){
+      sel.value='';
+      // find chips for this select and deactivate
+      const groupMap={'fComm':'mineral','fType':'type','fStat':'status','fGov':'region'};
+      const grp=groupMap[id];
+      if(grp) document.querySelectorAll(`[data-group="${grp}"]`).forEach(c=>c.classList.remove('on'));
+    }
+  }
+  doFilter();
+  updateMapHeader();
+}
+
+function goHome(){
+  document.body.classList.remove('map-mode');
+  closeDet();
+  const home=document.getElementById('home');
+  if(!home) return;
+  home.style.display='';
+  home.classList.add('v');
+  showHomePage('overview');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>home.classList.add('in')));
+}
+
+// ═══════════════════════════════════════════════════
+// DASHBOARD & PHASE 1 PAGES
+// ═══════════════════════════════════════════════════
+let titlesSortCol='id', titlesSortDir=1;
+let oppFilterTag='all';
+let _phase1Inited=false;
+
+const DASH_LABELS={
+  overview:{title:'Overview',sub:'Registry snapshot'},
+  investor:{title:'Investor space',sub:'Watchlists & access'},
+  titles:{title:'Mining titles',sub:'ONM registry · Q1 2025'},
+  opportunities:{title:'Opportunities',sub:'Investment pipeline'},
+  brief:{title:'Sector brief',sub:'Platform overview'},
+  home:{title:'Sector brief',sub:'Platform overview'},
+};
+
+const GAMMA_SECTIONS=[
+  {id:'overview',label:'Overview'},
+  {id:'investor',label:'Investor'},
+  {id:'titles',label:'Titles'},
+  {id:'opportunities',label:'Opps'},
+  {id:'brief',label:'Brief'},
+];
+
+function updateGammaNav(page){
+  document.querySelectorAll('.gamma-pill[data-page]').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.page===page);
+  });
+  document.querySelectorAll('.g-strip-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.page===page);
+  });
+}
+
+function renderGammaStrip(){
+  const el=document.getElementById('gamma-strip');
+  if(!el) return;
+  el.innerHTML=GAMMA_SECTIONS.map(s=>`
+    <button type="button" class="g-strip-btn" data-page="${s.id}" onclick="showHomePage('${s.id}')" title="${s.label}">
+      <span class="g-strip-dot"></span>
+      <span class="g-strip-lbl">${s.label}</span>
+    </button>`).join('');
+}
+
+function initGammaScrollSpy(){
+  const root=document.getElementById('gamma-canvas');
+  if(!root||!window.IntersectionObserver) return;
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const page=e.target.id.replace('sec-','');
+        updateGammaNav(page==='home'?'brief':page);
+      }
+    });
+  },{root,threshold:0.25,rootMargin:'-72px 0px -40% 0px'});
+  document.querySelectorAll('.gamma-sec').forEach(s=>obs.observe(s));
+}
+
+function showHomePage(page){
+  const pages=['overview','investor','titles','opportunities','brief','home'];
+  if(page==='home') page='brief';
+  if(!pages.includes(page)) page='overview';
+  if(!_phase1Inited){ initPhase1Filters(); renderGammaStrip(); initGammaScrollSpy(); }
+  const sec=document.getElementById('sec-'+page);
+  const canvas=document.getElementById('gamma-canvas');
+  if(sec&&canvas) sec.scrollIntoView({behavior:'smooth',block:'start'});
+  updateGammaNav(page);
+  if(page==='overview') renderOverviewPage();
+  if(page==='titles') renderTitlesPage();
+  if(page==='opportunities') renderOpportunitiesPage();
+  if(page==='investor') renderInvestorPage();
+}
+
+function renderOverviewPage(){
+  const act=ALL.filter(d=>d.status==='Active');
+  const expSoon=ALL.filter(d=>{const dl=daysl(d.expires);return dl>=0&&dl<365;});
+  const area=Math.round(act.reduce((s,d)=>s+d.area_km2,0));
+  const w=getWatchlist();
+
+  const kpis=document.getElementById('dash-kpis');
+  if(kpis){
+    kpis.innerHTML=`
+      <div class="dash-kpi"><div class="dash-kpi-n">${ALL.length}</div><div class="dash-kpi-l">Registry titles</div><div class="dash-kpi-s">National catalogue</div></div>
+      <div class="dash-kpi"><div class="dash-kpi-n">${act.length}</div><div class="dash-kpi-l">Active permits</div><div class="dash-kpi-s">${Math.round(act.length/ALL.length*100)}% of registry</div></div>
+      <div class="dash-kpi"><div class="dash-kpi-n">${area}</div><div class="dash-kpi-l">Active km²</div><div class="dash-kpi-s">Combined footprint</div></div>
+      <div class="dash-kpi dash-kpi-warn"><div class="dash-kpi-n">${expSoon.length}</div><div class="dash-kpi-l">Expiring &lt; 12 mo</div><div class="dash-kpi-s">Review recommended</div></div>`;
+  }
+
+  const watchEl=document.getElementById('dash-watch-widget');
+  if(watchEl){
+    if(!w.length) watchEl.innerHTML='<div class="dash-empty">No saved titles — add from Mining titles or the map</div>';
+    else watchEl.innerHTML=w.slice(0,6).map(id=>{
+      const d=ALL.find(x=>x.id===id); if(!d) return '';
+      return `<div class="dash-li" onclick="openTitleDetail('${d.id}')"><span class="dash-li-n">${d.name}</span><span class="dash-li-m">${d.commodity}</span></div>`;
+    }).join('');
+  }
+
+  const oppEl=document.getElementById('dash-opp-widget');
+  if(oppEl){
+    const top=act.sort((a,b)=>b.area_km2-a.area_km2).slice(0,5);
+    oppEl.innerHTML=top.map(d=>`
+      <div class="dash-li" onclick="openTitleDetail('${d.id}')">
+        <span class="dash-li-n">${d.name}</span>
+        <span class="dash-li-m">$${estValueM(d)}M</span>
+      </div>`).join('');
+  }
+
+  const expEl=document.getElementById('dash-exp-widget');
+  if(expEl){
+    const ex=expSoon.sort((a,b)=>daysl(a.expires)-daysl(b.expires)).slice(0,5);
+    if(!ex.length) expEl.innerHTML='<div class="dash-empty">No permits expiring within 12 months</div>';
+    else expEl.innerHTML=ex.map(d=>`
+      <div class="dash-li" onclick="openTitleDetail('${d.id}')">
+        <span class="dash-li-n">${d.name}</span>
+        <span class="dash-li-m">${daysl(d.expires)}d</span>
+      </div>`).join('');
+  }
+
+  const commEl=document.getElementById('dash-comm-bars');
+  if(commEl){
+    const comm={};act.forEach(d=>{comm[d.commodity]=(comm[d.commodity]||0)+1;});
+    const mx=Math.max(...Object.values(comm),1);
+    commEl.innerHTML=Object.entries(comm).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+      <div class="bar-r" style="margin-bottom:6px"><span class="bar-l" title="${k}">${k}</span>
+      <div class="bar-t"><div class="bar-f" style="width:${Math.round(v/mx*100)}%;background:var(--gold)"></div></div>
+      <span class="bar-v">${v}</span></div>`).join('');
+  }
+
+  renderInvestorPage();
+}
+
+function initPhase1Filters(){
+  _phase1Inited=true;
+  const commSel=document.getElementById('titles-f-comm');
+  const govSel=document.getElementById('titles-f-gov');
+  if(commSel){
+    [...new Set(ALL.map(d=>d.commodity))].sort().forEach(c=>{
+      const o=document.createElement('option');o.value=c;o.textContent=c;commSel.appendChild(o);
+    });
+  }
+  if(govSel){
+    [...new Set(ALL.map(d=>d.governorate))].sort().forEach(g=>{
+      const o=document.createElement('option');o.value=g;o.textContent=g;govSel.appendChild(o);
+    });
+  }
+  const chips=document.getElementById('opp-chips');
+  if(chips){
+    const tags=[{id:'all',label:'All'},{id:'phosphate',label:'Phosphate'},{id:'metals',label:'Metals'},{id:'industrial',label:'Industrial'}];
+    chips.innerHTML=tags.map(t=>
+      `<button class="pg-chip${t.id===oppFilterTag?' on':''}" data-tag="${t.id}" onclick="setOppTag('${t.id}',this)">${t.label}</button>`
+    ).join('');
+  }
+}
+
+function estValueM(d){
+  const m={Phosphate:2.6,'Lead & Zinc':1.8,Iron:2.2,Baryte:0.9,Limestone:0.4,'Silica Sand':0.5,Gypsum:0.35,Salt:0.2,'Oil Shale':1.1};
+  return Math.max(1, Math.round(d.area_km2*(m[d.commodity]||1)));
+}
+
+function oppStatusLabel(d){
+  if(d.type==='Exploration Permit') return {cls:'st-open',txt:'Open Call'};
+  if(d.type==='Research Authorization') return {cls:'st-new',txt:'New'};
+  return {cls:'st-active',txt:'Active'};
+}
+
+function getWatchlist(){
+  try{return JSON.parse(localStorage.getItem('tmh-watch')||'[]');}catch(e){return[];}
+}
+function setWatchlist(ids){localStorage.setItem('tmh-watch',JSON.stringify(ids));}
+function toggleWatch(id){
+  let w=getWatchlist();
+  if(w.includes(id)) w=w.filter(x=>x!==id);
+  else w.push(id);
+  setWatchlist(w);
+  renderInvestorPage();
+  if(document.getElementById('pg-overview')?.classList.contains('v')) renderOverviewPage();
+  toast(w.includes(id)?'Added to watchlist':'Removed from watchlist','ok');
+}
+function clearWatchlist(){setWatchlist([]);renderInvestorPage();renderOverviewPage();toast('Watchlist cleared','ok');}
+
+function renderInvestorPage(){
+  const w=getWatchlist();
+  const el=document.getElementById('watch-cnt'); if(el) el.textContent=w.length;
+  const list=document.getElementById('watch-list');
+  if(!list) return;
+  if(!w.length){
+    list.innerHTML='<div class="pg-watch-empty">No titles saved — browse Mining Titles or the map</div>';
+  } else {
+    list.innerHTML=w.map(id=>{
+      const d=ALL.find(x=>x.id===id);
+      if(!d) return '';
+      return `<div class="pg-watch-item" onclick="openTitleDetail('${d.id}')"><span>${d.name}</span><span style="color:var(--dim)">${d.id}</span></div>`;
+    }).join('');
+  }
+  const stats=document.getElementById('inv-stats');
+  if(stats){
+    const act=ALL.filter(d=>d.status==='Active').length;
+    const area=Math.round(ALL.reduce((s,d)=>s+d.area_km2,0));
+    stats.innerHTML=`
+      <div class="pg-stat"><div class="pg-stat-n">${ALL.length}</div><div class="pg-stat-l">Registry titles</div></div>
+      <div class="pg-stat"><div class="pg-stat-n">${act}</div><div class="pg-stat-l">Active permits</div></div>
+      <div class="pg-stat"><div class="pg-stat-n">${w.length}</div><div class="pg-stat-l">Your watchlist</div></div>
+      <div class="pg-stat"><div class="pg-stat-n">${area}</div><div class="pg-stat-l">Total km² tracked</div></div>`;
+  }
+}
+
+function getFilteredTitles(){
+  const q=(document.getElementById('titles-q')?.value||'').toLowerCase();
+  const fc=document.getElementById('titles-f-comm')?.value||'';
+  const fs=document.getElementById('titles-f-stat')?.value||'';
+  const fg=document.getElementById('titles-f-gov')?.value||'';
+  return ALL.filter(d=>{
+    if(fc&&d.commodity!==fc) return false;
+    if(fs&&d.status!==fs) return false;
+    if(fg&&d.governorate!==fg) return false;
+    if(q){
+      const hay=`${d.id} ${d.name} ${d.company} ${d.governorate} ${d.commodity} ${d.type}`.toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function sortTitles(col){
+  if(titlesSortCol===col) titlesSortDir*=-1;
+  else{ titlesSortCol=col; titlesSortDir=1; }
+  renderTitlesPage();
+}
+
+function renderTitlesPage(){
+  let rows=getFilteredTitles();
+  rows=[...rows].sort((a,b)=>{
+    let va=a[titlesSortCol], vb=b[titlesSortCol];
+    if(titlesSortCol==='area_km2'){va=+va;vb=+vb;}
+    else if(titlesSortCol==='expires'){va=new Date(va);vb=new Date(vb);}
+    else{va=String(va);vb=String(vb);}
+    if(va<vb) return -1*titlesSortDir;
+    if(va>vb) return 1*titlesSortDir;
+    return 0;
+  });
+  const stats=document.getElementById('titles-stats');
+  if(stats){
+    const act=rows.filter(d=>d.status==='Active').length;
+    const area=Math.round(rows.reduce((s,d)=>s+d.area_km2,0));
+    stats.innerHTML=`
+      <div class="pg-stat"><div class="pg-stat-n">${rows.length}</div><div class="pg-stat-l">Matching titles</div></div>
+      <div class="pg-stat"><div class="pg-stat-n">${act}</div><div class="pg-stat-l">Active</div></div>
+      <div class="pg-stat"><div class="pg-stat-n">${area}</div><div class="pg-stat-l">Combined km²</div></div>
+      <div class="pg-stat"><div class="pg-stat-n">${[...new Set(rows.map(d=>d.commodity))].length}</div><div class="pg-stat-l">Commodities</div></div>`;
+  }
+  const tb=document.getElementById('titles-tbody');
+  if(!tb) return;
+  const w=getWatchlist();
+  tb.innerHTML=rows.map(d=>{
+    const inW=w.includes(d.id);
+    return `<tr>
+      <td>${d.id}</td>
+      <td class="td-name">${d.name}</td>
+      <td>${d.commodity}</td>
+      <td><span class="bdg ${BC[d.type]}">${SH[d.type]}</span></td>
+      <td>${d.company}</td>
+      <td>${d.governorate}</td>
+      <td>${d.area_km2}</td>
+      <td>${d.expires}</td>
+      <td class="td-act">
+        <button class="pg-td-btn" onclick="openTitleDetail('${d.id}')">Details</button>
+        <button class="pg-td-btn" onclick="openMapForTitle('${d.id}')">Map</button>
+        <button class="pg-td-btn" onclick="toggleWatch('${d.id}')">${inW?'★ Saved':'+ Watch'}</button>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--dim)">No titles match your filters</td></tr>';
+}
+
+function setOppTag(tag,btn){
+  oppFilterTag=tag;
+  document.querySelectorAll('#opp-chips .pg-chip').forEach(c=>c.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  renderOpportunitiesPage();
+}
+
+function getOpportunityRows(){
+  const q=(document.getElementById('opp-q')?.value||'').toLowerCase();
+  let rows=ALL.filter(d=>d.status==='Active');
+  if(oppFilterTag==='phosphate') rows=rows.filter(d=>d.commodity==='Phosphate');
+  else if(oppFilterTag==='metals') rows=rows.filter(d=>/Iron|Zinc|Lead/.test(d.commodity));
+  else if(oppFilterTag==='industrial') rows=rows.filter(d=>/Limestone|Gypsum|Silica|Salt|Baryte/.test(d.commodity));
+  if(q){
+    rows=rows.filter(d=>{
+      const hay=`${d.name} ${d.company} ${d.governorate} ${d.commodity}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }
+  return rows.sort((a,b)=>b.area_km2-a.area_km2);
+}
+
+function renderOpportunitiesPage(){
+  const rows=getOpportunityRows();
+  const stats=document.getElementById('opp-stats');
+  if(stats){
+    const exp=rows.filter(d=>d.type==='Exploration Permit').length;
+    const val=rows.reduce((s,d)=>s+estValueM(d),0);
+    stats.innerHTML=`
+      <div class="pg-stat"><div class="pg-stat-n">${rows.length}</div><div class="pg-stat-l">Open opportunities</div></div>
+      <div class="pg-stat"><div class="pg-stat-n">${exp}</div><div class="pg-stat-l">Exploration permits</div></div>
+      <div class="pg-stat"><div class="pg-stat-n">$${val}M</div><div class="pg-stat-l">Est. portfolio value</div></div>
+      <div class="pg-stat"><div class="pg-stat-n">${[...new Set(rows.map(d=>d.governorate))].length}</div><div class="pg-stat-l">Regions</div></div>`;
+  }
+  const grid=document.getElementById('opp-grid');
+  if(!grid) return;
+  grid.innerHTML=rows.map(d=>{
+    const st=oppStatusLabel(d);
+    const est=estValueM(d);
+    return `<div class="h-opp" onclick="openTitleDetail('${d.id}')">
+      <div class="h-opp-head">
+        <span class="h-opp-mineral">${d.commodity}</span>
+        <span class="h-opp-status ${st.cls}">${st.txt}</span>
+      </div>
+      <div class="h-opp-body">
+        <div class="h-opp-name">${d.name}</div>
+        <div class="h-opp-company">${d.company}</div>
+        <div class="h-opp-meta">
+          <span class="h-opp-tag">${SH[d.type]}</span>
+          <span class="h-opp-tag">${d.governorate}</span>
+          <span class="h-opp-tag">${d.id}</span>
+        </div>
+      </div>
+      <div class="h-opp-foot">
+        <span class="h-opp-area">${d.area_km2} km² · Est. $${est}M</span>
+        <span class="h-opp-arr">→</span>
+      </div>
+    </div>`;
+  }).join('') || '<div style="grid-column:1/-1;padding:32px;text-align:center;color:var(--dim);font-size:10px">No opportunities match filters</div>';
+}
+
+function openTitleDetail(id){
+  const d=ALL.find(x=>x.id===id);
+  if(!d){ toast('Title not found',''); return; }
+  const st=oppStatusLabel(d);
+  const est=estValueM(d);
+  const w=getWatchlist().includes(id);
+  const body=document.getElementById('pg-detail-body');
+  if(body){
+    body.innerHTML=`
+      <div class="h-sec-tag">${d.id} · ${d.governorate}</div>
+      <div class="h-sec-title" style="font-size:22px;margin:8px 0 12px">${d.name}</div>
+      <span class="h-opp-status ${st.cls}" style="display:inline-block;margin-bottom:12px">${st.txt}</span>
+      <div class="pg-detail-grid">
+        <div><div class="pg-dk">Company</div><div class="pg-dv">${d.company}</div></div>
+        <div><div class="pg-dk">Commodity</div><div class="pg-dv">${d.commodity}</div></div>
+        <div><div class="pg-dk">Permit type</div><div class="pg-dv"><span class="bdg ${BC[d.type]}">${SH[d.type]}</span></div></div>
+        <div><div class="pg-dk">Status</div><div class="pg-dv">${d.status}</div></div>
+        <div><div class="pg-dk">Area</div><div class="pg-dv">${d.area_km2} km²</div></div>
+        <div><div class="pg-dk">Est. value</div><div class="pg-dv">$${est}M</div></div>
+        <div><div class="pg-dk">Granted</div><div class="pg-dv">${d.granted}</div></div>
+        <div><div class="pg-dk">Expires</div><div class="pg-dv">${d.expires}</div></div>
+        <div><div class="pg-dk">Decree</div><div class="pg-dv">${d.decree||'—'}</div></div>
+        <div><div class="pg-dk">Contact</div><div class="pg-dv">${d.contact||'—'}</div></div>
+      </div>
+      <div class="pg-detail-acts">
+        <button class="pg-btn pg-btn-primary" onclick="openMapForTitle('${d.id}')">View on map</button>
+        <button class="pg-btn" onclick="toggleWatch('${d.id}');openTitleDetail('${d.id}')">${w?'Remove from watchlist':'Add to watchlist'}</button>
+        <button class="pg-btn" onclick="closeTitleDetail()">Close</button>
+      </div>`;
+  }
+  document.getElementById('pg-detail')?.classList.add('v');
+}
+
+function closeTitleDetail(e){
+  if(e&&e.target&&e.target.id!=='pg-detail') return;
+  document.getElementById('pg-detail')?.classList.remove('v');
+}
+
+function openMapForTitle(id){
+  closeTitleDetail();
+  enterPlatform();
+  setTimeout(()=>{
+    fixMapLayout();
+    if(typeof selectTitle==='function') selectTitle(id);
+  }, 400);
+}
+
+function openMapPreset(preset){
+  enterPlatform();
+  setTimeout(()=>{
+    fixMapLayout();
+    rstAll();
+    if(preset.commodity){
+      const sel=document.getElementById('fComm');
+      if(sel){ sel.value=preset.commodity; document.querySelectorAll('[data-group="mineral"]').forEach(c=>{
+        c.classList.toggle('on', c.dataset.val===preset.commodity);
+      });}
+    }
+    if(preset.type){
+      const sel=document.getElementById('fType');
+      if(sel){ sel.value=preset.type; document.querySelectorAll('[data-group="type"]').forEach(c=>{
+        c.classList.toggle('on', c.dataset.val===preset.type);
+      });}
+    }
+    if(preset.status){
+      const sel=document.getElementById('fStat');
+      if(sel){ sel.value=preset.status; document.querySelectorAll('[data-group="status"]').forEach(c=>{
+        c.classList.toggle('on', c.dataset.val===preset.status);
+      });}
+    }
+    doFilter();
+    updateMapHeader();
+    toast('Map filter applied','ok');
+  }, 500);
+}
+
+function openSplashFromHome(){
+  document.body.classList.remove('map-mode');
+  const splash=document.getElementById('splash');
+  const home=document.getElementById('home');
+  if(home){ home.classList.remove('in','v'); home.style.display='none'; }
+  if(splash){
+    splash.style.display='flex';
+    splash.classList.remove('out');
+    openSplashPanel('login');
+  }
+}
+
+function downloadSectorBrief(){
+  const act=ALL.filter(d=>d.status==='Active');
+  const lines=[
+    'TUNISIAN MINING HUB — SECTOR BRIEF',
+    'Generated: '+new Date().toISOString().slice(0,10),
+    '',
+    'Summary',
+    '- Total titles in registry: '+ALL.length,
+    '- Active permits: '+act.length,
+    '- Combined active area: '+Math.round(act.reduce((s,d)=>s+d.area_km2,0))+' km²',
+    '',
+    'By commodity (active):',
+    ...Object.entries(act.reduce((o,d)=>{o[d.commodity]=(o[d.commodity]||0)+1;return o;},{})).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'  · '+k+': '+v),
+    '',
+    'Featured active titles:',
+    ...act.slice(0,12).map(d=>'  · '+d.id+' — '+d.name+' ('+d.governorate+', '+d.area_km2+' km²)'),
+    '',
+    'Data source: Office National des Mines (ONM) · Demo dataset',
+    '© MineMap Intelligence — info@minemap.tn',
+  ];
+  const blob=new Blob([lines.join('\n')],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='tunisia-mining-sector-brief.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Sector brief downloaded','ok');
+}
+
+function exportTitlesCSV(){
+  const rows=getFilteredTitles();
+  const cols=['id','name','commodity','type','company','governorate','area_km2','granted','expires','status','decree','contact','lat','lng'];
+  const csv=[cols.join(',')].concat(rows.map(d=>cols.map(c=>{
+    const v=d[c]==null?'':String(d[c]);
+    return '"'+v.replace(/"/g,'""')+'"';
+  }).join(','))).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='tunisia-mining-titles.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Exported '+rows.length+' titles','ok');
+}
+
+// patch rstAll to also clear chips
+const _origRstAll = typeof rstAll==='function' ? rstAll : null;
+function rstAll(){
+  if(_origRstAll) _origRstAll();
+  document.querySelectorAll('.flt-chip').forEach(c=>c.classList.remove('on'));
+  updateMapHeader();
+}
 function expPct(s,e){return Math.min(100,Math.max(0,(new Date()-new Date(s))/(new Date(e)-new Date(s))*100));}
 
 let _tid;
